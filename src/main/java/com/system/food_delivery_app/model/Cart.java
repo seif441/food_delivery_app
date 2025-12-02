@@ -9,7 +9,7 @@ public class Cart {
     // @OneToOne
     // @JoinColumn(name = "Customer_id", referencedColumnName = "id")
     // private customer customer;
-    //seif
+    // shady
     
 
 }
