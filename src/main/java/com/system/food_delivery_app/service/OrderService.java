@@ -1,4 +1,4 @@
-package com.fooddeliveryapp.service;
+package com.system.food_delivery_app.service;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -6,10 +6,11 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fooddeliveryapp.Repository.OrderRepository;
-import com.fooddeliveryapp.model.Order;
-import com.fooddeliveryapp.model.OrderStatus;
-    @Service
+import com.system.food_delivery_app.model.Order;
+import com.system.food_delivery_app.model.OrderStatus;
+import com.system.food_delivery_app.repository.OrderRepository;
+
+@Service
 public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
