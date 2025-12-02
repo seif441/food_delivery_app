@@ -1,5 +1,5 @@
 
- package com.fooddeliveryapp.model;
+ package com.system.food_delivery_app.model;
 
  import java.time.LocalDateTime;
     import java.util.List;

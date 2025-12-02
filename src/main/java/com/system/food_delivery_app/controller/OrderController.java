@@ -1,4 +1,4 @@
-package com.fooddeliveryapp.controller;
+package com.system.food_delivery_app.controller;
 
 import java.util.List;
 
@@ -13,10 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fooddeliveryapp.model.Order;
-import com.fooddeliveryapp.model.OrderStatus;
-import com.fooddeliveryapp.service.OrderService;
-
+import com.system.food_delivery_app.model.Order;
+import com.system.food_delivery_app.model.OrderStatus;
+import com.system.food_delivery_app.service.OrderService;
 @RestController
 
 @RequestMapping("/orders")
