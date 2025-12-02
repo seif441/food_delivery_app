@@ -1,0 +1,95 @@
+
+ package com.fooddeliveryapp.model;
+
+ import java.time.LocalDateTime;
+    import java.util.List;
+
+
+
+import jakarta.persistence.*;
+ @Entity
+public class Order {
+    @Id
+   @GeneratedValue(strategy = GenerationType.IDENTITY)
+private long id;
+ /*@ManyToOne
+    private User customer;*/
+
+   /*  @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items;*/
+    
+private String paymentMethod = "CASH_ON_DELIVERY";
+
+
+    private double totalPrice;
+     @Enumerated(EnumType.STRING)
+
+    private OrderStatus status;
+
+    
+  /*   @OneToOne(cascade = CascadeType.ALL)
+    private DeliveryAddress deliveryAddress;*/
+
+    private LocalDateTime orderDate;
+     public long getId() {
+        return this.id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+   /*  public User getCustomer() {
+        return this.customer;
+    }
+
+    public void setCustomer(User customer) {
+        this.customer = customer;
+    }
+
+    public List<OrderItem> getItems() {
+        return this.items;
+    }
+
+    public void setItems(List<OrderItem> items) {
+        this.items = items;
+    }*/
+
+    public double getTotalPrice() {
+        return this.totalPrice;
+    }
+
+    public void setTotalPrice(double totalPrice) {
+        this.totalPrice = totalPrice;
+    }
+
+    public OrderStatus getStatus() {
+        return this.status;
+    }
+
+    public void setStatus(OrderStatus status) {
+        this.status = status;
+    }
+
+   
+
+   /*  public DeliveryAddress getDeliveryAddress() {
+        return this.deliveryAddress;
+    }
+
+    public void setDeliveryAddress(DeliveryAddress deliveryAddress) {
+        this.deliveryAddress = deliveryAddress;
+    }*/
+
+    public LocalDateTime getOrderDate() {
+        return this.orderDate;
+    }
+
+    public void setOrderDate(LocalDateTime orderDate) {
+        this.orderDate = orderDate;
+    }
+
+
+}
+
+
