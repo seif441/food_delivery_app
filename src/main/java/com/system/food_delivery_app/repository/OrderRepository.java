@@ -1,6 +1,6 @@
 
-package com.fooddeliveryapp.Repository;
-import com.fooddeliveryapp.model.Order;
+package com.system.food_delivery_app.repository;
+import com.system.food_delivery_app.model.Order;
 
 import java.util.List;
 
