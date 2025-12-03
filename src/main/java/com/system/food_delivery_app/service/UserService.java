@@ -2,27 +2,71 @@ package com.system.food_delivery_app.service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.system.food_delivery_app.model.User;
 import com.system.food_delivery_app.repository.UserRepository;
 
-
 @Service
 public class UserService {
-    private final UserRepository userRepository;
-public UserService(UserRepository userRepository) {
+    @Autowired
+    private UserRepository userRepository;
+    // private final UserRepository userRepository;
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z]).{8,}$");
+    public UserService(UserRepository userRepository) {
     this.userRepository = userRepository;
-}
-
-// Register new user
-public User registerUser(User user) {
-    if (user == null) {
-        throw new IllegalArgumentException("User cannot be null");
     }
-    return userRepository.save(user);
-}
+
+    // Register new user
+
+    public User registerUser(User user) {
+        // Validate required fields
+        if (user.getEmail() == null || user.getPassword() == null || user.getName() == null) {
+            throw new IllegalArgumentException("Name, email, and password are required.");
+        }
+
+        // Check if email already exists
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new IllegalArgumentException("Email already registered.");
+        }
+
+        // Validate password
+        if (!PASSWORD_PATTERN.matcher(user.getPassword()).matches()) {
+            throw new IllegalArgumentException(
+                "Password must be at least 8 characters long and contain at least one letter."
+            );
+        }
+
+        // Hash password before saving
+        // user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        return userRepository.save(user);
+    }
+
+
+    // User login
+    public String loginUser(String email, String password) {
+        var optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isEmpty()) {
+            throw new IllegalArgumentException("Invalid email or password.");
+        }
+
+        // User user = optionalUser.get();
+
+        // Verify password
+        // if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
+        //     throw new IllegalArgumentException("Invalid email or password.");
+        // }
+
+        // Return JWT or session token (example)
+        return "Login successful!"; // Replace with jwtService.generateToken(user)
+    }
+
+
 
 // Find user by email
 public Optional<User> findByEmail(String email) {
@@ -34,7 +78,7 @@ public List<User> getAllUsers() {
     return userRepository.findAll();
 }
 
-    // Update user profile
+// Update user profile
 public User updateUser(Long id, User updatedUser) {
     if (id == null) {
         throw new IllegalArgumentException("User id cannot be null");

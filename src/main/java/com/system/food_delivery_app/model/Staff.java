@@ -1,10 +1,8 @@
-package com.example.staff.model;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+package com.system.food_delivery_app.model;
+import jakarta.persistence.*;
 
 @Entity
-public class StaffModel {
+public class Staff {
 
     @Id
     private Integer orderId;
@@ -12,9 +10,9 @@ public class StaffModel {
     private String deliveryAddress;
     private String status;
 
-    public StaffModel() {}
+    public Staff() {}
 
-    public StaffModel(Integer orderId, String customerName, String deliveryAddress, String status) {
+    public Staff(Integer orderId, String customerName, String deliveryAddress, String status) {
         this.orderId = orderId;
         this.customerName = customerName;
         this.deliveryAddress = deliveryAddress;
