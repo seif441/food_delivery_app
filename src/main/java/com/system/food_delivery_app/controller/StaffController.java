@@ -1,7 +1,7 @@
 package com.system.food_delivery_app.controller;
 
 import com.system.food_delivery_app.service.StaffService;
-import com.system.food_delivery_app.model.StaffModel;
+import com.system.food_delivery_app.model.Staff;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,19 +19,19 @@ public class StaffController {
     }
 
     @GetMapping("/orders") 
-    public List<StaffModel> viewAllOrders() {
+    public List<Staff> viewAllOrders() {
         return staffService.getAllOrders();
     }
 
     @PutMapping("/orders/{id}/prepare")
-    public ResponseEntity<StaffModel> prepareOrder(@PathVariable Integer id) {
+    public ResponseEntity<Staff> prepareOrder(@PathVariable Integer id) {
         return staffService.prepareOrder(id)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.badRequest().build());
     }
 
     @PutMapping("/orders/{id}/status")
-    public ResponseEntity<StaffModel> updateOrderStatus(
+    public ResponseEntity<Staff> updateOrderStatus(
             @PathVariable Integer id, 
             @RequestBody StatusUpdate request) {
         
