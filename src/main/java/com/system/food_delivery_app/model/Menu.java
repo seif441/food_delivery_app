@@ -1,11 +1,11 @@
-package com.deliveryapp.demo.model;
+package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 
 
 @Entity
 
 public class Menu {
-  @Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 

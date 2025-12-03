@@ -1,7 +1,7 @@
-package com.example.deliveryapp.demo.service;
+package com.system.food_delivery_app.service;
 
-import com.example.deliveryapp.model.Menu;
-import com.example.deliveryapp.repository.MenuRepository;
+import com.system.food_delivery_app.model.Menu;
+import com.system.food_delivery_app.repository.MenuRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
