@@ -1,7 +1,7 @@
 package com.system.food_delivery_app.controller;
 
-import com.deliveryapp.demo.model.Menu;
-import com.deliveryapp.demo.service.MenuService;
+import com.system.food_delivery_app.model.Menu;
+import com.system.food_delivery_app.service.MenuService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

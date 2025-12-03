@@ -1,7 +1,7 @@
-package com.example.service;
+package com.system.food_delivery_app.service;
 
-import com.example.staff.model.StaffModel;
-import com.example.staff.repository.StaffRepository;
+import com.system.food_delivery_app.model.Staff;
+import com.system.food_delivery_app.repository.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
@@ -17,11 +17,11 @@ public class StaffService {
         this.repository = repository;
     }
 
-    public List<StaffModel> getAllOrders() {
+    public List<Staff> getAllOrders() {
         return repository.findAll();
     }
 
-    public Optional<StaffModel> prepareOrder(Integer orderId) {
+    public Optional<Staff> prepareOrder(Integer orderId) {
         return repository.findById(orderId)
                 .flatMap(order -> {
                     if ("Pending".equalsIgnoreCase(order.getStatus())) {
@@ -32,7 +32,7 @@ public class StaffService {
                 });
     }
     
-    public Optional<StaffModel> changeOrderStatus(Integer orderId, String newStatus) {
+    public Optional<Staff> changeOrderStatus(Integer orderId, String newStatus) {
         return repository.findById(orderId)
                 .map(order -> {
                     order.setStatus(newStatus);
