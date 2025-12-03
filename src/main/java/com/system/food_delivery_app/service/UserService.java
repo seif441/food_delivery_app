@@ -11,52 +11,52 @@ import com.system.food_delivery_app.repository.UserRepository;
 
 @Service
 public class UserService {
-      private final UserRepository userRepository;
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final UserRepository userRepository;
+public UserService(UserRepository userRepository) {
+    this.userRepository = userRepository;
+}
 
-    // Register new user
-    public User registerUser(User user) {
-        if (user == null) {
-            throw new IllegalArgumentException("User cannot be null");
-        }
-        return userRepository.save(user);
+// Register new user
+public User registerUser(User user) {
+    if (user == null) {
+        throw new IllegalArgumentException("User cannot be null");
     }
+    return userRepository.save(user);
+}
 
-    // Find user by email
-    public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+// Find user by email
+public Optional<User> findByEmail(String email) {
+    return userRepository.findByEmail(email);
+}
+
+// Get all users
+public List<User> getAllUsers() {
+    return userRepository.findAll();
+}
+
+    // Update user profile
+public User updateUser(Long id, User updatedUser) {
+    if (id == null) {
+        throw new IllegalArgumentException("User id cannot be null");
     }
+    return userRepository.findById(id)
+            .map(user -> {
+                user.setName(updatedUser.getName());
+                user.setPhoneNumber(updatedUser.getPhoneNumber());
+                // user.setAddress(updatedUser.getAddress());
+                return userRepository.save(user);
+            })
+            .orElseThrow(() -> new RuntimeException("User not found"));
+}
 
-    // Get all users
-    public List<User> getAllUsers() {
-        return userRepository.findAll();
+
+// Delete user
+public void deleteUser(Long id) {
+    if (id != null) {
+        userRepository.deleteById(id);
+    } else {
+        throw new IllegalArgumentException("User id cannot be null");
     }
-
-     // Update user profile
-    public User updateUser(Long id, User updatedUser) {
-        if (id == null) {
-            throw new IllegalArgumentException("User id cannot be null");
-        }
-        return userRepository.findById(id)
-                .map(user -> {
-                    user.setName(updatedUser.getName());
-                    user.setPhoneNumber(updatedUser.getPhoneNumber());
-                    // user.setAddress(updatedUser.getAddress());
-                    return userRepository.save(user);
-                })
-                .orElseThrow(() -> new RuntimeException("User not found"));
-    }
-
-
-    // Delete user
-    public void deleteUser(Long id) {
-        if (id != null) {
-            userRepository.deleteById(id);
-        } else {
-            throw new IllegalArgumentException("User id cannot be null");
-        }
-    }
+}
 
 }

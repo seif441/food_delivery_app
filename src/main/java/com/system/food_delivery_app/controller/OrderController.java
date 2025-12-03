@@ -21,32 +21,32 @@ import com.system.food_delivery_app.service.OrderService;
 @RequestMapping("/orders")
 
 public class OrderController {
-    @Autowired
-    private OrderService orderService;
+@Autowired
+private OrderService orderService;
 
-  /*   @PostMapping
-    public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
-        return ResponseEntity.ok(orderService.placeOrder(order));
-    }*/
+/*@PostMapping
+public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
+return ResponseEntity.ok(orderService.placeOrder(order));
+}*/
 
-    @PutMapping("/{id}/status")
-    public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
-        return ResponseEntity.ok(orderService.updateStatus(id, status));
-    }
+@PutMapping("/{id}/status")
+public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
+return ResponseEntity.ok(orderService.updateStatus(id, status));
+}
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
-        return ResponseEntity.ok(orderService.getOrderById(id));
-    }
+@GetMapping("/{id}")
+public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+return ResponseEntity.ok(orderService.getOrderById(id));
+}
 
-    @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<Order>> getCustomerOrders(@PathVariable Long customerId) {
-        return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
-    }
+@GetMapping("/customer/{customerId}")
+public ResponseEntity<List<Order>> getCustomerOrders(@PathVariable Long customerId) {
+return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
+}
 
-    @GetMapping
-    public ResponseEntity<List<Order>> getAllOrders() {
-        return ResponseEntity.ok(orderService.getAllOrders());
-    }
+@GetMapping
+public ResponseEntity<List<Order>> getAllOrders() {
+return ResponseEntity.ok(orderService.getAllOrders());
+}
 }
 
