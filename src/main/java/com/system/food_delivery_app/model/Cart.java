@@ -8,8 +8,6 @@ public class Cart {
     private long id;
     // @OneToOne
     // @JoinColumn(name = "Customer_id", referencedColumnName = "id")
-    // private customer customer;
-    // Seif
-    //jana
+    
 
 }
