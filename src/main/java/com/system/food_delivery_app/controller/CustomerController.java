@@ -31,10 +31,10 @@ public class CustomerController {
     // }
 
     // View order status
-    @GetMapping("/orders/{orderId}")
-    public Order viewOrderStatus(@PathVariable Long orderId) {
-        return service.viewOrderStatus(orderId);
-    }
+    // @GetMapping("/orders/{orderId}")
+    // public Order viewOrderStatus(@PathVariable Long orderId) {
+    //     return service.viewOrderStatus(orderId);
+    // }
 
     // Update profile
     // @PutMapping("/{id}/profile")
@@ -45,10 +45,11 @@ public class CustomerController {
     // }
 
     // Delete account
-    @DeleteMapping("/{id}")
-    public void deleteAccount(@PathVariable Long id) {
-        service.deleteAccount(id);
-    }
+    // @DeleteMapping("/{id}")
+    // public void deleteAccount(@PathVariable Long id) {
+    //     service.deleteAccount(id);
+    // }
+
 }
 
 
