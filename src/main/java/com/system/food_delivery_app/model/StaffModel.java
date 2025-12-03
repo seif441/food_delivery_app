@@ -1,4 +1,4 @@
-package com.example.staff.model;
+package com.system.food_delivery_app.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
