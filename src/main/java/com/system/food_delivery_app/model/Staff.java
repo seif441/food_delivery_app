@@ -1,7 +1,5 @@
 package com.system.food_delivery_app.model;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class Staff {
