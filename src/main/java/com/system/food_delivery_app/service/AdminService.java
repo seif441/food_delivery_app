@@ -34,9 +34,11 @@ public class AdminService {
         Optional<User> userOpt = userRepo.findById(userId);
         if (userOpt.isEmpty()) {
             throw new RuntimeException("User not found");
-        }
+     }
         User user = userOpt.get();
-        user.setRole(role);               // update role (e.g., CUSTOMER → STAFF)
+        user.getRoles().clear();
+        user.getRoles().add(role);
+               // update role (e.g., CUSTOMER → STAFF)
         return userRepo.save(user);       // save updated user
     }
 
