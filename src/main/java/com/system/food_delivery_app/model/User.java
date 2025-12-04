@@ -10,12 +10,12 @@ import java.util.Set;
 @Table(name = "Users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     @Column(nullable = false, unique = true)
-    private String email;  
+    private String email;
     @Column(nullable = false)
     private String password;
     private String phoneNumber;
@@ -79,7 +79,6 @@ public class User {
     public void setRoles(Set<Role> roles) {
        this.roles = roles;
 } 
-
 
     public Date getCreatedAt() {
         return this.createdAt;

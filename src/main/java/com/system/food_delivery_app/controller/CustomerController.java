@@ -21,13 +21,14 @@ public class CustomerController {
     // View menu
     // @GetMapping("/menu")
     // public List<Product> viewMenu() {
-    //     return service.viewMenu();
+    // return service.viewMenu();
     // }
 
     // Create order
     // @PostMapping("/{id}/orders")
-    // public Order createOrder(@PathVariable Long id, @RequestBody List<Long> productIds) {
-    //     return service.createOrder(id, productIds);
+    // public Order createOrder(@PathVariable Long id, @RequestBody List<Long>
+    // productIds) {
+    // return service.createOrder(id, productIds);
     // }
 
     // View order status
@@ -36,7 +37,4 @@ public class CustomerController {
         return service.viewOrderStatus(orderId);
     }
 
-
 }
-
-

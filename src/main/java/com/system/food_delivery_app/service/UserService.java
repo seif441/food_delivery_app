@@ -11,8 +11,9 @@ public class UserService {
     
     private final UserRepository userRepository;
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z]).{8,}$");
+
     public UserService(UserRepository userRepository) {
-    this.userRepository = userRepository;
+        this.userRepository = userRepository;
     }
 
     // Register new user
@@ -31,8 +32,7 @@ public class UserService {
         // Validate password
         if (!PASSWORD_PATTERN.matcher(user.getPassword()).matches()) {
             throw new IllegalArgumentException(
-                "Password must be at least 8 characters long and contain at least one letter."
-            );
+                    "Password must be at least 8 characters Long and contain at least one letter.");
         }
 
         // Hash password before saving
@@ -40,7 +40,6 @@ public class UserService {
 
         return userRepository.save(user);
     }
-
 
     // User login
     public String loginUser(String email, String password) {
@@ -54,40 +53,46 @@ public class UserService {
 
         // Verify password
         // if (!passwordEncoder.matches(rawPassword, user.getPassword())) {
-        //     throw new IllegalArgumentException("Invalid email or password.");
+        // throw new IllegalArgumentException("Invalid email or password.");
         // }
 
         // Return JWT or session token (example)
         return "Login successful!"; // Replace with jwtService.generateToken(user)
     }
 
-
-
-// Find user by email
-public Optional<User> findByEmail(String email) {
-    return userRepository.findByEmail(email);
-}
-
-// Get all users
-public List<User> getAllUsers() {
-    return userRepository.findAll();
-}
-
-public User updateProfile(Long id, User updatedUser) {
-    User user = userRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("User not found"));
-
-    user.setName(updatedUser.getName());
-    user.setPhoneNumber(updatedUser.getPhoneNumber());
-    // Add other fields if needed
-
-    return userRepository.save(user);
-}
-
-public void deleteAccount(Long id) {
-    if (!userRepository.existsById(id)) {
-        throw new IllegalArgumentException("User not found");
+    // Find user by email
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
     }
-    userRepository.deleteById(id);
+
+    // Get all users
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+// Update user profile
+public User updateProfile(Long id, User updatedUser) {
+    if (id == null) {
+        throw new IllegalArgumentException("User id cannot be null");
+    }
+    return userRepository.findById(id)
+            .map(user -> {
+                user.setName(updatedUser.getName());
+                user.setPhoneNumber(updatedUser.getPhoneNumber());
+                // user.setAddress(updatedUser.getAddress());
+                return userRepository.save(user);
+            })
+            .orElseThrow(() -> new RuntimeException("User not found"));
 }
+
+
+// Delete user
+public void deleteAccount(Long id) {
+    if (id != null) {
+        userRepository.deleteById(id);
+    } else {
+        throw new IllegalArgumentException("User id cannot be null");
+    }
+}
+
 }

@@ -1,6 +1,5 @@
 package com.system.food_delivery_app.controller;
 
-
 import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.model.Role;
 import com.system.food_delivery_app.model.User;
@@ -20,25 +19,24 @@ public class AdminController {
         this.service = service;
     }
 
-
     // Staff management
     @PostMapping("/staff")
     public ResponseEntity<User> addStaff(@RequestBody User staff, @RequestParam Role role) {
         return ResponseEntity.ok(service.addStaff(staff, role));
     }
+
     // Delete any user account
-      @DeleteMapping("/users/{userId}")
-      public ResponseEntity<Void> deleteAccount(@PathVariable Long userId) {
-      service.deleteAccount(userId);
-          return ResponseEntity.noContent().build();
-}
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<Void> deleteAccount(@PathVariable Long userId) {
+        service.deleteAccount(userId);
+        return ResponseEntity.noContent().build();
+    }
 
     @PutMapping("/role/{userId}")
     public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam Role role) {
         return ResponseEntity.ok(service.setRole(userId, role));
     }
 
-    
     @PostMapping("/menu")
     public ResponseEntity<Product> addMenuItem(@RequestBody Product product) {
         return ResponseEntity.ok(service.addMenuItem(product));

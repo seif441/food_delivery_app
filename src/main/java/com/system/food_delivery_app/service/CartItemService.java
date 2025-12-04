@@ -9,12 +9,13 @@ import com.system.food_delivery_app.repository.CartItemRepository;
 public class CartItemService {
     @Autowired
     private CartItemRepository cartItemRepository;
-    
-    public void saveItem(CartItem item){
+
+    public void saveItem(CartItem item) {
         cartItemRepository.save(item);
     }
-    public void removeItem(Long itemId){
+
+    public void removeItem(Long itemId) {
         cartItemRepository.deleteById(itemId);
     }
-    
+
 }

@@ -1,7 +1,5 @@
 package com.system.food_delivery_app.dto;
 
-
-
 public class CartItemRequest {
     private Long productId;
     private int quantity;

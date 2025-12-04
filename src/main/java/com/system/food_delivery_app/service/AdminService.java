@@ -1,6 +1,5 @@
 package com.system.food_delivery_app.service;
 
-
 import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.model.Role;
 import com.system.food_delivery_app.model.User;
@@ -13,44 +12,43 @@ import java.util.*;
 
 @Service
 public class AdminService {
- 
+
     private final AdminRepository adminRepo;
     private final UserRepository userRepo;
     private final ProductRepository productRepo;
 
-    
     public AdminService(AdminRepository adminRepo, UserRepository userRepo, ProductRepository productRepo) {
         this.adminRepo = adminRepo;
         this.userRepo = userRepo;
         this.productRepo = productRepo;
     }
 
-         // Staff management
+    // Staff management
     public User addStaff(User staff, Role role) {
         staff.getRoles().add(role);
 ;
         return userRepo.save(staff);
-    }  
+    }
+
     public User setRole(Long userId, Role role) {
         Optional<User> userOpt = userRepo.findById(userId);
         if (userOpt.isEmpty()) {
             throw new RuntimeException("User not found");
         }
         User user = userOpt.get();
-        user.getRoles().clear();
-    user.getRoles().add(role);       // update role (e.g., CUSTOMER → STAFF)
+        user.setRole(role);               // update role (e.g., CUSTOMER → STAFF)
         return userRepo.save(user);       // save updated user
     }
 
-      // Delete any user account (customer or staff)
+    // Delete any user account (customer or staff)
     public void deleteAccount(Long userId) {
-       if (userId == null) {
-          throw new IllegalArgumentException("User id cannot be null");
+        if (userId == null) {
+            throw new IllegalArgumentException("User id cannot be null");
+        }
+        userRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        userRepo.deleteById(userId);
     }
-    userRepo.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
-    userRepo.deleteById(userId);
-}
 
     // Menu management
     public Product addMenuItem(Product product) {

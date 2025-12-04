@@ -1,6 +1,6 @@
 package com.system.food_delivery_app.model;
-import jakarta.persistence.*;
 
+import jakarta.persistence.*;
 
 @Entity
 

@@ -14,8 +14,6 @@ public class StaffDeliveryService {
 
     private final DeliveryRepository repository;
 
-    @Autowired
-    private Order order;
     public StaffDeliveryService(DeliveryRepository repository) {
         this.repository = repository;
     }

@@ -19,12 +19,14 @@ public class Category {
     private String description;
 
     // One Category has Many Products
-    // mappedBy = "category" tells Hibernate to look at the 'category' field in the Product class
+    // mappedBy = "category" tells Hibernate to look at the 'category' field in the
+    // Product class
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore // Prevents infinite loops when converting to JSON
     private List<Product> products = new ArrayList<>();
 
-    public Category() {}
+    public Category() {
+    }
 
     public Category(String name, String description) {
         this.name = name;
@@ -43,11 +45,31 @@ public class Category {
     }
 
     // --- Getters and Setters ---
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-    public List<Product> getProducts() { return products; }
-    public void setProducts(List<Product> products) { this.products = products; }
+    public Long getId() {
+        return id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<Product> getProducts() {
+        return products;
+    }
+
+    public void setProducts(List<Product> products) {
+        this.products = products;
+    }
 }
