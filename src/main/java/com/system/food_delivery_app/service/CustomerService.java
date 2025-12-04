@@ -24,11 +24,6 @@ public class CustomerService {
     //     this.orderService = orderService;
     // }
 
-    // 🔹 Register new customer
-    // public Customer register(Customer c) {
-    //     c.setRole(Role.CUSTOMER);
-    //     return customerRepo.save(c);
-    // }
 
     // 🔹 View menu (all products)
     // public List<Product> viewMenu() {
@@ -46,18 +41,6 @@ public class CustomerService {
     //     return orderService.getOrderById(orderId);
     // }
 
-     // 🔹 Update profile
-    // public Customer updateProfile(Long id, String name, String phone) {
-    //     Customer c = customerRepo.findById(id).orElseThrow();
-    //     c.setName(name);
-    //     c.setPhoneNumber(phone);
-    //     return customerRepo.save(c);
-    // }
-
-     // 🔹 Delete account
-    // public void deleteAccount(Long id) {
-    //     customerRepo.deleteById(id);
-    // }
 }
 
 

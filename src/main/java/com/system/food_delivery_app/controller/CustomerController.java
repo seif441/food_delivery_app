@@ -36,19 +36,6 @@ public class CustomerController {
     //     return service.viewOrderStatus(orderId);
     // }
 
-    // Update profile
-    // @PutMapping("/{id}/profile")
-    // public Customer updateProfile(@PathVariable Long id,
-    //                               @RequestParam String name,
-    //                               @RequestParam String phone) {
-    //     return service.updateProfile(id, name, phone);
-    // }
-
-    // Delete account
-    // @DeleteMapping("/{id}")
-    // public void deleteAccount(@PathVariable Long id) {
-    //     service.deleteAccount(id);
-    // }
 
 }
 

@@ -20,28 +20,23 @@ public class AdminController {
         this.service = service;
     }
 
-    // Register admin
-    @PostMapping("/register")
-    public ResponseEntity<Admin> registerAdmin(@RequestBody Admin admin) {
-        return ResponseEntity.ok(service.registerAdmin(admin));
-    }
 
     // Staff management
-    @PostMapping("/staff")
-    public ResponseEntity<User> addStaff(@RequestBody User staff, @RequestParam Role role) {
-        return ResponseEntity.ok(service.addStaff(staff, role));
-    }
+    // @PostMapping("/staff")
+    // public ResponseEntity<User> addStaff(@RequestBody User staff, @RequestParam Role role) {
+    //     return ResponseEntity.ok(service.addStaff(staff, role));
+    // }
+    // Delete any user account
+//       @DeleteMapping("/users/{userId}")
+//       public ResponseEntity<Void> deleteAccount(@PathVariable Long userId) {
+//       service.deleteAccount(userId);
+//           return ResponseEntity.noContent().build();
+// }
 
-    @PutMapping("/role/{userId}")
-    public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam Role role) {
-        return ResponseEntity.ok(service.setRole(userId, role));
-    }
-
-    @DeleteMapping("/users/{userId}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable Long userId) {
-        service.deleteAccount(userId);
-        return ResponseEntity.noContent().build();
-    }
+    // @PutMapping("/role/{userId}")
+    // public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam Role role) {
+    //     return ResponseEntity.ok(service.setRole(userId, role));
+    // }
 
     // Menu management
     // @PostMapping("/menu")
@@ -54,11 +49,11 @@ public class AdminController {
     //     return ResponseEntity.ok(service.updateMenuItem(productId, updated));
     // }
 
-    @DeleteMapping("/menu/{productId}")
-    public ResponseEntity<Void> deleteMenuItem(@PathVariable Long productId) {
-        service.deleteMenuItem(productId);
-        return ResponseEntity.noContent().build();
-    }
+    // @DeleteMapping("/menu/{productId}")
+    // public ResponseEntity<Void> deleteMenuItem(@PathVariable Long productId) {
+    //     service.deleteMenuItem(productId);
+    //     return ResponseEntity.noContent().build();
+    // }
 
     // @GetMapping("/menu")
     // public ResponseEntity<List<Product>> viewMenu() {

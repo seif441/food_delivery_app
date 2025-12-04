@@ -14,39 +14,40 @@ import java.util.List;
 @Service
 public class AdminService {
 
-    // private final AdminRepository adminRepo;
-    // private final UserRepository userRepo;
-    // private final ProductRepository productRepo;
-
-    // public AdminService(AdminRepository adminRepo, UserRepository userRepo, ProductRepository productRepo) {
-    //     this.adminRepo = adminRepo;
-    //     this.userRepo = userRepo;
-    //     this.productRepo = productRepo;
-    // }
-
-    // Register admin
-    // public Admin registerAdmin(Admin admin) {
-    //     admin.setRole(Role.ADMIN);
-    //     return adminRepo.save(admin);
-    // }
-
-    // // Staff management
+    
     // public User addStaff(User staff, Role role) {
     //     staff.setRole(role);
     //     return userRepo.save(staff);
     // }
+// private final AdminRepository adminRepo;
+//     private final UserRepository userRepo;
+//     private final ProductRepository productRepo;
 
-    // public User setRole(Long userId, Role role) {
-        // User user = userRepo.findById(userId).orElseThrow();
-    //     user.setRole(role);
-    //     return userRepo.save(user);
-    // }
+//     public AdminService(AdminRepository adminRepo, UserRepository userRepo, ProductRepository productRepo) {
+//         this.adminRepo = adminRepo;
+//         this.userRepo = userRepo;
+//         this.productRepo = productRepo;
+//     }
 
-    // public void deleteAccount(Long userId) {
-    //     userRepo.deleteById(userId);
-    // }
 
-    // Menu management
+//     // Staff management
+//     public User setRole(Long userId, Role role) {
+//         User user = userRepo.findById(userId).orElseThrow();
+//         user.setRole(role);
+//         return userRepo.save(user);
+//     }
+
+// Delete any user account (customer or staff)
+// public void deleteAccount(Long userId) {
+//     if (userId == null) {
+//         throw new IllegalArgumentException("User id cannot be null");
+//     }
+//     userRepo.findById(userId)
+//             .orElseThrow(() -> new RuntimeException("User not found"));
+//     userRepo.deleteById(userId);
+// }
+
+//     // Menu management
 //     public Product addMenuItem(Product product) {
 //         return productRepo.save(product);
 //     }
@@ -76,9 +77,9 @@ public class AdminService {
 //         return productRepo.save(product);
 //     }
 
-//     public Product setAvailability(Long productId, boolean available) {
-//         Product product = productRepo.findById(productId).orElseThrow();
-//         product.setAvailable(available);
-//         return productRepo.save(product);
-//     }
+    // public Product setAvailability(Long productId, boolean available) {
+    //     Product product = productRepo.findById(productId).orElseThrow();
+    //     product.setAvailable(available);
+    //     return productRepo.save(product);
+    // }
 }
