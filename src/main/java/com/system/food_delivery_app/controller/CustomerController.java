@@ -2,7 +2,7 @@ package com.system.food_delivery_app.controller;
 
 import com.system.food_delivery_app.model.Customer;
 import com.system.food_delivery_app.model.Order;
-// import com.system.food_delivery_app.model.Product;
+import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.service.CustomerService;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,10 +31,10 @@ public class CustomerController {
     // }
 
     // View order status
-    // @GetMapping("/orders/{orderId}")
-    // public Order viewOrderStatus(@PathVariable Long orderId) {
-    //     return service.viewOrderStatus(orderId);
-    // }
+    @GetMapping("/orders/{orderId}")
+    public Order viewOrderStatus(@PathVariable Long orderId) {
+        return service.viewOrderStatus(orderId);
+    }
 
 
 }
