@@ -3,18 +3,13 @@ package com.system.food_delivery_app.service;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import com.system.food_delivery_app.model.User;
 import com.system.food_delivery_app.repository.UserRepository;
-
 @Service
 public class UserService {
-    @Autowired
-    private UserRepository userRepository;
-    // private final UserRepository userRepository;
+    
+    private final UserRepository userRepository;
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z]).{8,}$");
     public UserService(UserRepository userRepository) {
     this.userRepository = userRepository;
@@ -79,7 +74,7 @@ public List<User> getAllUsers() {
 }
 
 // Update user profile
-public User updateUser(Long id, User updatedUser) {
+public User updateProfile(Long id, User updatedUser) {
     if (id == null) {
         throw new IllegalArgumentException("User id cannot be null");
     }
@@ -95,7 +90,7 @@ public User updateUser(Long id, User updatedUser) {
 
 
 // Delete user
-public void deleteUser(Long id) {
+public void deleteAccount(Long id) {
     if (id != null) {
         userRepository.deleteById(id);
     } else {

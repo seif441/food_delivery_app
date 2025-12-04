@@ -1,8 +1,10 @@
 package com.system.food_delivery_app.model;
 
 import java.sql.Date;
-// import java.util.List;
+import java.util.HashSet;
 import jakarta.persistence.*;
+import java.util.Set;
+
 
 @Entity
 @Table(name = "users")
@@ -17,8 +19,14 @@ public class User {
     @Column(nullable = false)
     private String password;
     private String phoneNumber;
-    @Enumerated(EnumType.STRING)
-    private Role role;
+     @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "user_roles", // join table
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
+
     private Date createdAt;
 
     // Getters and Setters
@@ -63,13 +71,15 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
-    public Role getRole() {
-        return this.role;
+
+    public Set<Role> getRoles() {
+        return this.roles;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
     }
+    
 
 
     public Date getCreatedAt() {

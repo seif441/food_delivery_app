@@ -70,13 +70,13 @@ public class UserController {
     // Update user profile
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
+        return ResponseEntity.ok(userService.updateProfile(id, user));
     }
 
     // Delete user
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+        userService.deleteAccount(id);
         return ResponseEntity.noContent().build();
     }
 
