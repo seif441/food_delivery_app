@@ -18,23 +18,22 @@ public class CustomerService {
     private final OrderService orderService;
 
     public CustomerService(CustomerRepository customerRepo,
-                           MenuService menuService,
-                           OrderService orderService) {
+            MenuService menuService,
+            OrderService orderService) {
         this.customerRepo = customerRepo;
         this.menuService = menuService;
         this.orderService = orderService;
     }
 
-
     // //View menu (all products)
     // public List<Product> viewMenu() {
-    //     return menuService.getAllProducts();
+    // return menuService.getAllProducts();
     // }
 
     // // Create order
     // public Order createOrder(Long customerId, List<Long> productIds) {
-    //     Customer c = customerRepo.findById(customerId).orElseThrow();
-    //     return orderService.placeOrder(c, productIds);
+    // Customer c = customerRepo.findById(customerId).orElseThrow();
+    // return orderService.placeOrder(c, productIds);
     // }
 
     // View order status
@@ -43,5 +42,3 @@ public class CustomerService {
     }
 
 }
-
-

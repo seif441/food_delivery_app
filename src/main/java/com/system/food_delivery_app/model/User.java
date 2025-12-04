@@ -8,12 +8,12 @@ import jakarta.persistence.*;
 @Table(name = "Users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     @Column(nullable = false, unique = true)
-    private String email;  
+    private String email;
     @Column(nullable = false)
     private String password;
     private String phoneNumber;
@@ -70,7 +70,6 @@ public class User {
     public void setRole(Role role) {
         this.role = role;
     }
-
 
     public Date getCreatedAt() {
         return this.createdAt;

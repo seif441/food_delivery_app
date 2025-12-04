@@ -1,15 +1,18 @@
 package com.system.food_delivery_app.model;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+
 @Entity
 @Table(name = "CartItem")
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    private Long id;
     @ManyToOne
     @JoinColumn(name = "Order_id")
+    @JsonBackReference
     private Order order;
     @ManyToOne
     @JoinColumn(name = "Product_id")
@@ -21,11 +24,11 @@ public class CartItem {
     @JsonIgnore
     private Cart cart;
 
-    public long getId() {
+    public Long getId() {
         return this.id;
     }
 
-    public void setId(long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -68,11 +71,11 @@ public class CartItem {
     public void setPrice(double price) {
         this.price = price;
     }
-    public void calculateSubTotal(){
-        if (this.product == null){
-            throw new IllegalStateException ("Cannot calculate Subtotal: Product is null..");
-        }
-        else{
+
+    public void calculateSubTotal() {
+        if (this.product == null) {
+            throw new IllegalStateException("Cannot calculate Subtotal: Product is null..");
+        } else {
             this.price = this.product.getPrice() * this.quantity;
         }
     }

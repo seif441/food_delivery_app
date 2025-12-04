@@ -9,30 +9,32 @@ import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.repository.CartRepository;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
+
 @Service
 public class CartService {
     @Autowired
     private CartRepository cartRepository;
     @Autowired
     private ProductRepository productRepository;
-    public Cart getCart(Long CartId){
-        return cartRepository.findById(CartId).orElseThrow(()-> new RuntimeException("Cart Not Found"));
+
+    public Cart getCart(Long CartId) {
+        return cartRepository.findById(CartId).orElseThrow(() -> new RuntimeException("Cart Not Found"));
     }
+
     @Transactional
-    public Cart addItemToCart(Long CartId, Long ProductId, int quantity){
+    public Cart addItemToCart(Long CartId, Long ProductId, int quantity) {
         Cart cart = getCart(CartId);
         Product product = productRepository.findById(ProductId)
-        .orElseThrow(()-> new RuntimeException("Product Not Found"));
+                .orElseThrow(() -> new RuntimeException("Product Not Found"));
         Optional<CartItem> exsistingItem = cart.getItems().stream()
-        .filter(item -> item.getProduct().getId().equals(ProductId))
-        .findFirst();
+                .filter(item -> item.getProduct().getId().equals(ProductId))
+                .findFirst();
 
-        if (exsistingItem.isPresent()){
+        if (exsistingItem.isPresent()) {
             CartItem item = exsistingItem.get();
             item.setQuantity(item.getQuantity() + quantity);
             item.calculateSubTotal();
-        }
-        else {
+        } else {
             CartItem newItem = new CartItem();
             newItem.setProduct(product);
             newItem.setQuantity(quantity);
@@ -40,47 +42,48 @@ public class CartService {
             newItem.calculateSubTotal();
             cart.getItems().add(newItem);
         }
-        cart.calculateTotal();  
+        cart.calculateTotal();
         return cartRepository.save(cart);
-        }
+    }
 
-        @Transactional
-        public Cart removeItemFromCart(Long CartId, Long ProductId){
-            Cart cart = getCart(CartId);
+    @Transactional
+    public Cart removeItemFromCart(Long CartId, Long ProductId) {
+        Cart cart = getCart(CartId);
 
-            boolean removed = cart.getItems().removeIf(item -> item.getProduct().getId().equals(ProductId));
+        boolean removed = cart.getItems().removeIf(item -> item.getProduct().getId().equals(ProductId));
 
-            if (removed){
-                cart.calculateTotal();
-                return cartRepository.save(cart);
-            }
-            return cart;
-        }
-        public Cart UpdataItemQuantity(int quantity,Long ProductId, Long CartId){
-            Cart cart = getCart(CartId);
-            Optional<CartItem> itemOpt = cart.getItems().stream()
-            .filter(item -> item.getProduct().getId().equals(ProductId))
-            .findFirst();
-
-            if (itemOpt.isPresent()){
-                CartItem item = itemOpt.get();
-                if (quantity <= 0){
-                    return removeItemFromCart(CartId, ProductId);
-                }
-                item.setQuantity(quantity);
-                item.calculateSubTotal();
-                cart.calculateTotal();
-                return cartRepository.save(cart);
-            }
-            throw new RuntimeException("item not found in cart");
-        }
-
-        @Transactional
-        public void clearCart(Long CartId){
-            Cart cart = getCart(CartId);
-            cart.getItems().clear();
+        if (removed) {
             cart.calculateTotal();
-            cartRepository.save(cart);
+            return cartRepository.save(cart);
         }
+        return cart;
+    }
+
+    public Cart UpdataItemQuantity(int quantity, Long ProductId, Long CartId) {
+        Cart cart = getCart(CartId);
+        Optional<CartItem> itemOpt = cart.getItems().stream()
+                .filter(item -> item.getProduct().getId().equals(ProductId))
+                .findFirst();
+
+        if (itemOpt.isPresent()) {
+            CartItem item = itemOpt.get();
+            if (quantity <= 0) {
+                return removeItemFromCart(CartId, ProductId);
+            }
+            item.setQuantity(quantity);
+            item.calculateSubTotal();
+            cart.calculateTotal();
+            return cartRepository.save(cart);
+        }
+        throw new RuntimeException("item not found in cart");
+    }
+
+    @Transactional
+    public void clearCart(Long CartId) {
+        Cart cart = getCart(CartId);
+        cart.getItems().clear();
+        cart.calculateTotal();
+        cartRepository.save(cart);
+    }
 
 }

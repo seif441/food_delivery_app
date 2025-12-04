@@ -50,7 +50,6 @@ public class UserController {
         }
     }
 
-
     // Get all users
     @GetMapping("/")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -64,8 +63,6 @@ public class UserController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-
 
     // Update user profile
     @PutMapping("/{id}")
