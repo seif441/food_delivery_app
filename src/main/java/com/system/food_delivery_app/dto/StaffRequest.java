@@ -1,22 +1,19 @@
-package com.system.food_delivery_app.model;
+package com.system.food_delivery_app.dto;
 
-import jakarta.persistence.Entity;
 import java.time.LocalDate;
 
-@Entity
-public class Staff extends User {
+public class StaffRequestDTO {
 
+    private String name;
     private Double salary;
     private LocalDate dateOfJoining;
 
-    public Staff() {
-        super();
+    public String getName() {
+        return name;
     }
 
-    public Staff(String name, Double salary, LocalDate dateOfJoining) {
-        super(name);
-        this.salary = salary;
-        this.dateOfJoining = dateOfJoining;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public Double getSalary() {
