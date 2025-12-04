@@ -1,10 +1,9 @@
 package com.system.food_delivery_app.model;
 
-// import com.system.food_delivery_app.model.Product;
+import com.system.food_delivery_app.model.Product;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "admins")
 public class Admin extends User {
 
 
@@ -20,7 +19,7 @@ public class Admin extends User {
     //     product.setPrice(newPrice);
     // }
 
-    // public void setAvailability(Product product, boolean available) {
-    //     product.setAvailable(available);
-    // }
+    public void setAvailability(Product product, boolean available) {
+        product.setAvailable(available);
+    }
 }

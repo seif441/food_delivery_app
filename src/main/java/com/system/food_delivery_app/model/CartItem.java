@@ -1,6 +1,9 @@
 package com.system.food_delivery_app.model;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 @Entity
+@Table(name = "CartItem")
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,6 +16,10 @@ public class CartItem {
     private Product product;
     private int quantity;
     private double price;
+    @ManyToOne
+    @JoinColumn(name = "Cart_id")
+    @JsonIgnore
+    private Cart cart;
 
     public long getId() {
         return this.id;
@@ -36,6 +43,14 @@ public class CartItem {
 
     public void setProduct(Product product) {
         this.product = product;
+    }
+
+    public Cart getCart() {
+        return this.cart;
+    }
+
+    public void setCart(Cart cart) {
+        this.cart = cart;
     }
 
     public int getQuantity() {

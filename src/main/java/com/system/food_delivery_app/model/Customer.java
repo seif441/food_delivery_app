@@ -5,7 +5,6 @@ import lombok.*;
 import java.util.List;
 
 @Entity
-@Table(name = "customers")
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor @Builder
 

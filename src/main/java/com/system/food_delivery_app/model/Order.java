@@ -2,20 +2,18 @@
 package com.system.food_delivery_app.model;
 import java.time.LocalDateTime;
 import java.util.List;
-
-
-
 import jakarta.persistence.*;
 @Entity
+@Table(name = "Orders")
 public class Order {
 @Id
 @GeneratedValue(strategy = GenerationType.IDENTITY)
 private long id;
-/*@ManyToOne
-private User customer;*/
+@ManyToOne
+private User customer;
 
-/* @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-private List<OrderItem> items;*/
+@OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+private List<CartItem> items;
     
 private String paymentMethod = "CASH_ON_DELIVERY";
 
@@ -24,10 +22,8 @@ private double totalPrice;
     @Enumerated(EnumType.STRING)
 
 private OrderStatus status;
-
-
-/*   @OneToOne(cascade = CascadeType.ALL)
-private DeliveryAddress deliveryAddress;*/
+// @OneToOne(cascade = CascadeType.ALL)
+// private DeliveryAddress deliveryAddress;
 
 private LocalDateTime orderDate;
     public long getId() {
@@ -38,7 +34,7 @@ public void setId(long id) {
     this.id = id;
 }
 
-/*  public User getCustomer() {
+  public User getCustomer() {
     return this.customer;
 }
 
@@ -46,13 +42,13 @@ public void setCustomer(User customer) {
     this.customer = customer;
 }
 
-public List<OrderItem> getItems() {
+public List<CartItem> getItems() {
     return this.items;
 }
 
-public void setItems(List<OrderItem> items) {
+public void setItems(List<CartItem> items) {
     this.items = items;
-}*/
+}
 
 public double getTotalPrice() {
     return this.totalPrice;
@@ -72,13 +68,13 @@ public void setStatus(OrderStatus status) {
 
 
 
-/*  public DeliveryAddress getDeliveryAddress() {
-    return this.deliveryAddress;
-}
+// public DeliveryAddress getDeliveryAddress() {
+//     return this.deliveryAddress;
+// }
 
-public void setDeliveryAddress(DeliveryAddress deliveryAddress) {
-    this.deliveryAddress = deliveryAddress;
-}*/
+// public void setDeliveryAddress(DeliveryAddress deliveryAddress) {
+//     this.deliveryAddress = deliveryAddress;
+//}
 
 public LocalDateTime getOrderDate() {
     return this.orderDate;
@@ -87,8 +83,6 @@ public LocalDateTime getOrderDate() {
 public void setOrderDate(LocalDateTime orderDate) {
     this.orderDate = orderDate;
 }
-
-
 }
 
 
