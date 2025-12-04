@@ -16,37 +16,39 @@ import org.springframework.web.bind.annotation.RestController;
 import com.system.food_delivery_app.model.Order;
 import com.system.food_delivery_app.model.OrderStatus;
 import com.system.food_delivery_app.service.OrderService;
+
 @RestController
 
 @RequestMapping("/orders")
 
 public class OrderController {
-@Autowired
-private OrderService orderService;
+    @Autowired
+    private OrderService orderService;
 
-/*@PostMapping
-public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
-return ResponseEntity.ok(orderService.placeOrder(order));
-}*/
+    /*
+     * @PostMapping
+     * public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
+     * return ResponseEntity.ok(orderService.placeOrder(order));
+     * }
+     */
 
-@PutMapping("/{id}/status")
-public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
-return ResponseEntity.ok(orderService.updateStatus(id, status));
+    @PutMapping("/{id}/status")
+    public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
+        return ResponseEntity.ok(orderService.updateStatus(id, status));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Order> getOrder(@PathVariable Long id) {
+        return ResponseEntity.ok(orderService.getOrderById(id));
+    }
+
+    @GetMapping("/customer/{customerId}")
+    public ResponseEntity<List<Order>> getCustomerOrders(@PathVariable Long customerId) {
+        return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<Order>> getAllOrders() {
+        return ResponseEntity.ok(orderService.getAllOrders());
+    }
 }
-
-@GetMapping("/{id}")
-public ResponseEntity<Order> getOrder(@PathVariable Long id) {
-return ResponseEntity.ok(orderService.getOrderById(id));
-}
-
-@GetMapping("/customer/{customerId}")
-public ResponseEntity<List<Order>> getCustomerOrders(@PathVariable Long customerId) {
-return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
-}
-
-@GetMapping
-public ResponseEntity<List<Order>> getAllOrders() {
-return ResponseEntity.ok(orderService.getAllOrders());
-}
-}
-

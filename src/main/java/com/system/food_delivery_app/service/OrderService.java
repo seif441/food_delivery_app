@@ -15,26 +15,28 @@ public class OrderService {
     @Autowired
     private OrderRepository orderRepository;
 
-    /*  public Order placeOrder(Order order) {
-         double total = order.getProducts().stream()
-            .mapToDouble(item -> item.getPrice() * item.getQuantity())
-            .sum();
-        order.setTotalPrice(total);
-        order.setOrderDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.PENDING);
-        return orderRepository.save(order);
-    }*/
+    /*
+     * public Order placeOrder(Order order) {
+     * double total = order.getProducts().stream()
+     * .mapToDouble(item -> item.getPrice() * item.getQuantity())
+     * .sum();
+     * order.setTotalPrice(total);
+     * order.setOrderDate(LocalDateTime.now());
+     * order.setStatus(OrderStatus.PENDING);
+     * return orderRepository.save(order);
+     * }
+     */
 
     public Order updateStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new RuntimeException("Order not found"));
         order.setStatus(status);
         return orderRepository.save(order);
     }
 
     public Order getOrderById(Long id) {
         return orderRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new RuntimeException("Order not found"));
     }
 
     public List<Order> getOrdersByCustomer(Long customerId) {
@@ -45,4 +47,3 @@ public class OrderService {
         return orderRepository.findAll();
     }
 }
-

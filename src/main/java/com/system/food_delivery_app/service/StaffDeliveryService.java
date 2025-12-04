@@ -1,6 +1,7 @@
 package com.system.food_delivery_app.service;
 
 import com.system.food_delivery_app.model.Delivery;
+import com.system.food_delivery_app.model.Order;
 import com.system.food_delivery_app.repository.DeliveryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -13,7 +14,6 @@ public class StaffDeliveryService {
 
     private final DeliveryRepository repository;
 
-    @Autowired
     public StaffDeliveryService(DeliveryRepository repository) {
         this.repository = repository;
     }

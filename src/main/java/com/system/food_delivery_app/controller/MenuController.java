@@ -35,7 +35,7 @@ public class MenuController {
     public Menu createMenu(@RequestBody Menu menu) {
         return menuService.save(menu);
     }
-    
+
     @PutMapping("/{id}")
     public ResponseEntity<Menu> updateMenu(@PathVariable Long id, @RequestBody Menu menuDetails) {
         Menu updatedMenu = menuService.update(id, menuDetails);

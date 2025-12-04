@@ -1,27 +1,38 @@
 package com.system.food_delivery_app.model;
 
 import java.sql.Date;
-// import java.util.List;
+import java.util.HashSet;
 import jakarta.persistence.*;
+import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 @Entity
-@Table(name = "users")
-
+@Table(name = "Users")
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
-	@Id
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     @Column(nullable = false, unique = true)
-    private String email;  
+    private String email;
     @Column(nullable = false)
     private String password;
     private String phoneNumber;
-    @Enumerated(EnumType.STRING)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = true)
     private Role role;
+    @Column(name = "role_name")
+    private String roleName;
     private Date createdAt;
 
-    // Getters and Setters
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = new Date(System.currentTimeMillis());
+    }
+
 
     public Long getId() {
         return this.id;
@@ -62,22 +73,19 @@ public class User {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-
-    public Role getRole() {
-        return this.role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
-
     public Date getCreatedAt() {
         return this.createdAt;
     }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+    public void setRole(Role role) {
+        this.role = role;
+        if (role != null) {
+            this.roleName = role.getRoleName();
+        }
     }
-
+    @JsonIgnore
+    public Role getRole() {
+        return this.role;
+    }
 }
+
+    
