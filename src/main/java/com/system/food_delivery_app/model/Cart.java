@@ -2,6 +2,7 @@ package com.system.food_delivery_app.model;
 import java.util.*;
 import jakarta.persistence.*;
 @Entity
+@Table(name = "Cart")
 public class Cart {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

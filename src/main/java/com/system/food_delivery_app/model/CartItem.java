@@ -3,6 +3,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 @Entity
+@Table(name = "CartItem")
 public class CartItem {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
