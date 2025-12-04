@@ -5,7 +5,7 @@ import java.sql.Date;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "Users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
 	@Id
