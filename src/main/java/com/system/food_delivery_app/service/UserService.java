@@ -73,29 +73,21 @@ public List<User> getAllUsers() {
     return userRepository.findAll();
 }
 
-// Update user profile
 public User updateProfile(Long id, User updatedUser) {
-    if (id == null) {
-        throw new IllegalArgumentException("User id cannot be null");
-    }
-    return userRepository.findById(id)
-            .map(user -> {
-                user.setName(updatedUser.getName());
-                user.setPhoneNumber(updatedUser.getPhoneNumber());
-                // user.setAddress(updatedUser.getAddress());
-                return userRepository.save(user);
-            })
-            .orElseThrow(() -> new RuntimeException("User not found"));
+    User user = userRepository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+    user.setName(updatedUser.getName());
+    user.setPhoneNumber(updatedUser.getPhoneNumber());
+    // Add other fields if needed
+
+    return userRepository.save(user);
 }
 
-
-// Delete user
 public void deleteAccount(Long id) {
-    if (id != null) {
-        userRepository.deleteById(id);
-    } else {
-        throw new IllegalArgumentException("User id cannot be null");
+    if (!userRepository.existsById(id)) {
+        throw new IllegalArgumentException("User not found");
     }
+    userRepository.deleteById(id);
 }
-
 }

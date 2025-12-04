@@ -73,13 +73,12 @@ public class User {
 
 
     public Set<Role> getRoles() {
-        return this.roles;
-    }
+         return this.roles;
+}
 
     public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
-    
+       this.roles = roles;
+} 
 
 
     public Date getCreatedAt() {
@@ -89,5 +88,6 @@ public class User {
     public void setCreatedAt(Date createdAt) {
         this.createdAt = createdAt;
     }
+
 
 }
