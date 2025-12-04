@@ -12,7 +12,7 @@ public class MenuService {
 
     private final MenuRepository menuRepository;
 
-    @Autowired
+    
     public MenuService(MenuRepository menuRepository) {
         this.menuRepository = menuRepository;
     }

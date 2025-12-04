@@ -7,7 +7,7 @@ import java.util.Set;
 
 
 @Entity
-@Table(name = "users")
+@Table(name = "Users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
 	@Id
