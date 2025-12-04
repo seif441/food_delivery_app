@@ -23,7 +23,7 @@ public class UserRoleService {
         Role role = roleRepository.findByRoleName(roleName)
                 .orElseThrow(() -> new IllegalArgumentException("Role not found"));
 
-        user.getRoles().add(role);
+        user.setRole(role);
         return userRepository.save(user);
     }
 }

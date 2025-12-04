@@ -25,7 +25,7 @@ public class AdminService {
 
     // Staff management
     public User addStaff(User staff, Role role) {
-        staff.getRoles().add(role);
+        staff.setRole(role);
 ;
         return userRepo.save(staff);
     }
@@ -36,8 +36,7 @@ public class AdminService {
             throw new RuntimeException("User not found");
      }
         User user = userOpt.get();
-        user.getRoles().clear();
-        user.getRoles().add(role);
+        user.setRole(role);
                // update role (e.g., CUSTOMER → STAFF)
         return userRepo.save(user);       // save updated user
     }

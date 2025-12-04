@@ -8,12 +8,10 @@ public class Admin extends User {
 
 
     public void addStaff(User staff, Role role) {
-    staff.getRoles().add(role);   // ✅ add a role to staff
-}
-
+    staff.setRole(role);
+    }
 public void setRole(User user, Role role) {
-    user.getRoles().clear();      // ✅ remove existing roles
-    user.getRoles().add(role);    // ✅ assign a new single role
+    user.setRole(role);    
 }
 
 

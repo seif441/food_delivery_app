@@ -5,6 +5,8 @@ import java.util.HashSet;
 import jakarta.persistence.*;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 
 @Entity
 @Table(name = "Users")
@@ -19,17 +21,18 @@ public class User {
     @Column(nullable = false)
     private String password;
     private String phoneNumber;
-     @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-        name = "user_roles", // join table
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
-
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "role_id", nullable = true)
+    private Role role;
+    @Column(name = "role_name")
+    private String roleName;
     private Date createdAt;
 
-    // Getters and Setters
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = new Date(System.currentTimeMillis());
+    }
+
 
     public Long getId() {
         return this.id;
@@ -70,23 +73,19 @@ public class User {
     public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-
-
-    public Set<Role> getRoles() {
-         return this.roles;
-}
-
-    public void setRoles(Set<Role> roles) {
-       this.roles = roles;
-} 
-
     public Date getCreatedAt() {
         return this.createdAt;
     }
-
-    public void setCreatedAt(Date createdAt) {
-        this.createdAt = createdAt;
+    public void setRole(Role role) {
+        this.role = role;
+        if (role != null) {
+            this.roleName = role.getRoleName();
+        }
     }
-
-
+    @JsonIgnore
+    public Role getRole() {
+        return this.role;
+    }
 }
+
+    
