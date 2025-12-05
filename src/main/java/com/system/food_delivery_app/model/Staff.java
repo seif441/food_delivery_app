@@ -13,11 +13,11 @@ public class Staff extends User {
         super();
     }
 
-    public Staff(String name, Double salary, LocalDate dateOfJoining) {
-        super(name);
-        this.salary = salary;
-        this.dateOfJoining = dateOfJoining;
-    }
+    // public Staff(String name, Double salary, LocalDate dateOfJoining) {
+    //     super(name);
+    //     this.salary = salary;
+    //     this.dateOfJoining = dateOfJoining;
+    // }
 
     public Double getSalary() {
         return salary;

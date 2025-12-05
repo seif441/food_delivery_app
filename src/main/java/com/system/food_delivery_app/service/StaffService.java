@@ -1,9 +1,9 @@
 package com.system.food_delivery_app.service;
 
 
-import com.example.project.dto.StaffRequestDTO;
-import com.example.project.model.Staff;
-import com.example.project.repository.StaffRepository;
+import com.system.food_delivery_app.dto.StaffRequestDTO;
+import com.system.food_delivery_app.model.Staff;
+import com.system.food_delivery_app.repository.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,7 +15,7 @@ public class StaffService {
 
     private final StaffRepository staffRepository;
 
-    @Autowired
+    
     public StaffService(StaffRepository staffRepository) {
         this.staffRepository = staffRepository;
     }
