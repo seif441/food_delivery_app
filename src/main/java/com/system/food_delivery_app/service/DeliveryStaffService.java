@@ -1,7 +1,7 @@
 package com.system.food_delivery_app.service;
 
-import com.example.model.DeliveryStaff;
-import com.example.repository.DeliveryStaffRepository;
+import com.system.food_delivery_app.model.DeliveryStaff;
+import com.system.food_delivery_app.repository.DeliveryStaffRepository;
 import org.springframework.stereotype.Service;
 import java.util.List;
 

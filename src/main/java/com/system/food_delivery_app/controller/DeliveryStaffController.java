@@ -1,7 +1,7 @@
 package com.system.food_delivery_app.controller;
 
-import com.example.model.DeliveryStaff;
-import com.example.service.DeliveryStaffService;
+import com.system.food_delivery_app.model.DeliveryStaff;
+import com.system.food_delivery_app.service.DeliveryStaffService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

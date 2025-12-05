@@ -33,6 +33,20 @@ public class User {
         this.createdAt = new Date(System.currentTimeMillis());
     }
 
+    public User(Long id, String name, String email, String password, String phoneNumber, Role role, String roleName, Date createdAt) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.password = password;
+        this.phoneNumber = phoneNumber;
+        this.role = role;
+        this.roleName = roleName;
+        this.createdAt = createdAt;
+    }
+
+    public User() {
+    }
+
 
     public Long getId() {
         return this.id;
