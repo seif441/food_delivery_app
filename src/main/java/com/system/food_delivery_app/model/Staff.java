@@ -1,17 +1,19 @@
 package com.system.food_delivery_app.model;
 
-import jakarta.persistence.Entity;
-import java.time.LocalDate;
-
-@Entity
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import jakarta.*;
+import java.util.*;
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class Staff extends User {
+    private String staffIdNumber;
 
-    private Double salary;
-    private LocalDate dateOfJoining;
-
-    public Staff() {
-        super();
+    public Staff(String name, String email, String staffIdNumber) {
+        super(name, email, "STAFF");
+        this.staffIdNumber = staffIdNumber;
     }
+<<<<<<< HEAD
 
     // public Staff(String name, Double salary, LocalDate dateOfJoining) {
     //     super(name);
@@ -35,3 +37,6 @@ public class Staff extends User {
         this.dateOfJoining = dateOfJoining;
     }
 }
+=======
+}
+>>>>>>> c29c617705a343e594dd219d69c302c9ad04ea88
