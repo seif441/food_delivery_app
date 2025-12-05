@@ -1,47 +1,37 @@
 package com.system.food_delivery_app.controller;
 
-import com.system.food_delivery_app.service.StaffDeliveryService;
-import com.system.food_delivery_app.model.Delivery;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.model.DeliveryStaff;
+import com.example.service.DeliveryStaffService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/delivery")
-public class StaffDeliveryController {
+public class DeliveryStaffController {
+    private final DeliveryStaffService deliveryStaffService;
 
-    private final StaffDeliveryService deliveryService;
-
-    @Autowired
-    public StaffDeliveryController(StaffDeliveryService deliveryService) {
-        this.deliveryService = deliveryService;
+    public DeliveryStaffController(DeliveryStaffService deliveryStaffService) {
+        this.deliveryStaffService = deliveryStaffService;
     }
 
-    @GetMapping("/assigned-orders")
-    public List<Delivery> viewAssignedOrders() {
-        return deliveryService.getAssignedOrders();
+    @PostMapping
+    public ResponseEntity<DeliveryStaff> createDeliveryStaff(@RequestBody DeliveryStaff newDeliveryStaff) {
+        return ResponseEntity.status(201).body(deliveryStaffService.createDeliveryStaff(newDeliveryStaff));
+    }
+    
+    @GetMapping
+    public ResponseEntity<List<DeliveryStaff>> getAllDeliveryStaff() {
+        return ResponseEntity.ok(deliveryStaffService.getAllDeliveryStaff());
     }
 
-    @PutMapping("/orders/{id}/status")
-    public ResponseEntity<Delivery> updateDeliveryStatus(
-            @PathVariable Integer id,
-            @RequestBody StatusUpdate request) {
-
-        return deliveryService.updateOrderStatus(id, request.getNewStatus())
-                .map(ResponseEntity::ok)
-                .orElseGet(() -> ResponseEntity.badRequest().build());
+    @GetMapping("/{deliveryStaffId}/orders/assigned")
+    public ResponseEntity<List<Long>> getAssignedOrders(@PathVariable Long deliveryStaffId) {
+        return ResponseEntity.ok(deliveryStaffService.viewAssignedOrders(deliveryStaffId));
     }
 
-    private static class StatusUpdate {
-        private String newStatus;
-
-        public String getNewStatus() {
-            return newStatus;
-        }
-
-        public void setNewStatus(String newStatus) {
-            this.newStatus = newStatus;
-        }
+    @PutMapping("/{deliveryStaffId}/orders/{orderId}/status")
+    public ResponseEntity<String> updateDeliveryStatus(@PathVariable Long deliveryStaffId, @PathVariable Long orderId) {
+        return ResponseEntity.ok(deliveryStaffService.updateDeliveryStatus(orderId, deliveryStaffId));
     }
 }
