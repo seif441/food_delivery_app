@@ -1,6 +1,6 @@
 package com.system.food_delivery_app.repository;
 
-import com.example.model.DeliveryStaff;
+import com.system.food_delivery_app.model.DeliveryStaff;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

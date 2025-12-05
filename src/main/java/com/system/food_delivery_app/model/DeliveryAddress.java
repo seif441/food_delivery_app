@@ -1,4 +1,4 @@
-package com.example.fooddelivery.model;
+package com.system.food_delivery_app.model;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -14,6 +14,7 @@ public class DeliveryAddress {
     private Long id;
 
     private Long userId;
+    // get it from user class
 
     @NotBlank
     @Size(max = 255)

@@ -1,7 +1,8 @@
-package com.example.fooddelivery.controller;
+package com.system.food_delivery_app.controller;
 
-import com.example.fooddelivery.model.DeliveryAddress;
-import com.example.fooddelivery.service.DeliveryAddressService;
+import com.system.food_delivery_app.model.DeliveryAddress;
+import com.system.food_delivery_app.repository.UserRepository;
+import com.system.food_delivery_app.service.DeliveryAddressService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,18 +12,19 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/v1/addresses")
+@RequestMapping("/api/addresses")
 public class DeliveryAddressController {
 
     private final DeliveryAddressService deliveryAddressService;
-
     @Autowired
+    private UserRepository userRepository;
     public DeliveryAddressController(DeliveryAddressService deliveryAddressService) {
         this.deliveryAddressService = deliveryAddressService;
     }
 
     @GetMapping
     public ResponseEntity<List<DeliveryAddress>> getAddressesByUser(@RequestParam Long userId) {
+        // = userRepository.getById(userId)
         List<DeliveryAddress> addresses = deliveryAddressService.findAddressesByUserId(userId);
         return ResponseEntity.ok(addresses);
     }
@@ -45,6 +47,7 @@ public class DeliveryAddressController {
         return deliveryAddressService.update(id, addressDetails)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+                // make sure it's saved in the repo (database)
     }
 
     @DeleteMapping("/{id}")

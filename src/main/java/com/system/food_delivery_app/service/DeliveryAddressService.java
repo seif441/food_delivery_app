@@ -1,7 +1,7 @@
-package com.example.fooddelivery.service;
+package com.system.food_delivery_app.service;
 
-import com.example.fooddelivery.model.DeliveryAddress;
-import com.example.fooddelivery.repository.DeliveryAddressRepository;
+import com.system.food_delivery_app.model.DeliveryAddress;
+import com.system.food_delivery_app.repository.DeliveryAddressRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,7 +14,6 @@ public class DeliveryAddressService {
 
     private final DeliveryAddressRepository deliveryAddressRepository;
 
-    @Autowired
     public DeliveryAddressService(DeliveryAddressRepository deliveryAddressRepository) {
         this.deliveryAddressRepository = deliveryAddressRepository;
     }
