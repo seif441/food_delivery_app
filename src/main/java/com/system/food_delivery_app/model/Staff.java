@@ -1,37 +1,16 @@
 package com.system.food_delivery_app.model;
+package com.example.model;
 
-import jakarta.persistence.Entity;
-import java.time.LocalDate;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-@Entity
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class Staff extends User {
+    private String staffIdNumber;
 
-    private Double salary;
-    private LocalDate dateOfJoining;
-
-    public Staff() {
-        super();
-    }
-
-    public Staff(String name, Double salary, LocalDate dateOfJoining) {
-        super(name);
-        this.salary = salary;
-        this.dateOfJoining = dateOfJoining;
-    }
-
-    public Double getSalary() {
-        return salary;
-    }
-
-    public void setSalary(Double salary) {
-        this.salary = salary;
-    }
-
-    public LocalDate getDateOfJoining() {
-        return dateOfJoining;
-    }
-
-    public void setDateOfJoining(LocalDate dateOfJoining) {
-        this.dateOfJoining = dateOfJoining;
+    public Staff(String name, String email, String staffIdNumber) {
+        super(name, email, "STAFF");
+        this.staffIdNumber = staffIdNumber;
     }
 }
