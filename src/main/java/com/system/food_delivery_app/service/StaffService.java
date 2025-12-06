@@ -1,33 +1,133 @@
 package com.system.food_delivery_app.service;
 
+<<<<<<< HEAD
+import com.restaurant.model.Order;
+import com.restaurant.model.OrderStatus;
+import com.restaurant.model.Staff;
+import com.restaurant.repository.OrderRepository;
+import com.restaurant.repository.StaffRepository;
+=======
 
 import com.system.food_delivery_app.dto.StaffRequestDTO;
 import com.system.food_delivery_app.model.Staff;
 import com.system.food_delivery_app.repository.OrderRepository;
 import com.system.food_delivery_app.repository.StaffRepository;
+>>>>>>> 5c7cd28108648ea9d2662b36c833c41f66fda277
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 @Service
 public class StaffService {
-    private final StaffRepository staffRepository;
-    
-    public StaffService(StaffRepository staffRepository) {
-        this.staffRepository = staffRepository;
-    }
-    
-    public List<Long> viewIncomingOrders() {
-        return List.of(); 
-        
-    }
 
-    public String startPreparation(Long orderId) {
-        return ""; 
-    }
+@Autowired
+private StaffRepository staffRepository;
+
+@Autowired
+private OrderRepository orderRepository;
+
+public Staff getStaffById(Long staffId) {
+    return staffRepository.findById(staffId)
+            .orElseThrow(() -> new RuntimeException("Staff not found"));
+}
+
+public List<Staff> getAllStaff() {
+    return staffRepository.findAllStaff();
+}
+
+public Staff getStaffByEmail(String email) {
+    return staffRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Staff not found"));
+}
+
+// View all orders (for staff to manage)
+public List<Order> viewAllOrders(Long staffId) {
+    Staff staff = getStaffById(staffId);
+    return orderRepository.findAll();
+}
+
+// View orders by specific status
+public List<Order> viewOrdersByStatus(Long staffId, OrderStatus status) {
+    Staff staff = getStaffById(staffId);
+    return orderRepository.findByStatus(status);
+}
+
+// View pending orders
+public List<Order> viewPendingOrders(Long staffId) {
+    Staff staff = getStaffById(staffId);
+    return orderRepository.findByStatus(OrderStatus.PENDING);
+}
+
+// Prepare order - change status to PREPARING
+@Transactional
+public Order prepareOrder(Long staffId, Long orderId) {
+    Staff staff = getStaffById(staffId);
+    Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
     
-    public String updateOrderStatus(Long orderId, String newStatus) {
-        return ""; 
+    if (order.getStatus() == OrderStatus.PENDING) {
+        staff.prepareOrders(order);
+        return orderRepository.save(order);
+    } else {
+        throw new RuntimeException("Order cannot be prepared. Current status: " + order.getStatus());
     }
 }
 
+// Update order status
+@Transactional
+public Order updateOrderStatus(Long staffId, Long orderId, OrderStatus newStatus) {
+    Staff staff = getStaffById(staffId);
+    Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+    
+    // Staff can update to PREPARING, OUT_FOR_DELIVERY, or CANCELED
+    if (newStatus == OrderStatus.PREPARING || 
+        newStatus == OrderStatus.OUT_FOR_DELIVERY || 
+        newStatus == OrderStatus.CANCELED) {
+        staff.updateOrderStatus(order, newStatus);
+        return orderRepository.save(order);
+    } else {
+        throw new RuntimeException("Staff cannot set order to " + newStatus + " status");
+    }
+}
+
+// Get order details
+public Order getOrderDetails(Long staffId, Long orderId) {
+    Staff staff = getStaffById(staffId);
+    return orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+}
+
+// Mark order as out for delivery
+@Transactional
+public Order markOutForDelivery(Long staffId, Long orderId) {
+    Staff staff = getStaffById(staffId);
+    Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+    
+    if (order.getStatus() == OrderStatus.PREPARING) {
+        order.setStatus(OrderStatus.OUT_FOR_DELIVERY);
+        return orderRepository.save(order);
+    } else {
+        throw new RuntimeException("Order must be in PREPARING status. Current status: " + order.getStatus());
+    }
+}
+
+// Cancel order
+@Transactional
+public Order cancelOrder(Long staffId, Long orderId) {
+    Staff staff = getStaffById(staffId);
+    Order order = orderRepository.findById(orderId)
+            .orElseThrow(() -> new RuntimeException("Order not found"));
+    
+    if (order.getStatus() != OrderStatus.DELIVERED) {
+        order.setStatus(OrderStatus.CANCELED);
+        return orderRepository.save(order);
+    } else {
+        throw new RuntimeException("Cannot cancel delivered order");
+    }
+}
+
+
+}
