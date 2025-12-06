@@ -8,6 +8,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 @Entity
 @Table(name = "[Orders]")
 public class Order {
+    //SERIAL YOU SHOULD HAVE FIND BY STATUS
+    //SERIAL YOU SHOULD HAVE A REPO FOR THE ORDERSTATUS AND TABLE IN THE DATABASE
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

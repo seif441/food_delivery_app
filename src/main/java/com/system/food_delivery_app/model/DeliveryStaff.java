@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Entity
-@DiscriminatorValue(“DELIVERY_STAFF”)
+@DiscriminatorValue("DELIVERY_STAFF")
 public class DeliveryStaff extends User {
 
 

@@ -1,18 +1,10 @@
 package com.system.food_delivery_app.service;
 
-<<<<<<< HEAD
-import com.restaurant.model.Order;
-import com.restaurant.model.OrderStatus;
-import com.restaurant.model.Staff;
-import com.restaurant.repository.OrderRepository;
-import com.restaurant.repository.StaffRepository;
-=======
-
-import com.system.food_delivery_app.dto.StaffRequestDTO;
+import com.system.food_delivery_app.model.Order;
+import com.system.food_delivery_app.model.OrderStatus;
 import com.system.food_delivery_app.model.Staff;
 import com.system.food_delivery_app.repository.OrderRepository;
 import com.system.food_delivery_app.repository.StaffRepository;
->>>>>>> 5c7cd28108648ea9d2662b36c833c41f66fda277
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,22 +34,20 @@ public Staff getStaffByEmail(String email) {
 }
 
 // View all orders (for staff to manage)
-public List<Order> viewAllOrders(Long staffId) {
-    Staff staff = getStaffById(staffId);
+public List<Order> viewAllOrders() {
     return orderRepository.findAll();
 }
 
 // View orders by specific status
-public List<Order> viewOrdersByStatus(Long staffId, OrderStatus status) {
-    Staff staff = getStaffById(staffId);
-    return orderRepository.findByStatus(status);
-}
+// public List<Order> viewOrdersByStatus(OrderStatus status) {
+//     return orderRepository.findByStatus(status);
+// } //SERIAL SHOULD HAVE FIND BY STATUS
 
 // View pending orders
-public List<Order> viewPendingOrders(Long staffId) {
-    Staff staff = getStaffById(staffId);
-    return orderRepository.findByStatus(OrderStatus.PENDING);
-}
+// public List<Order> viewPendingOrders(Long staffId) {
+//     Staff staff = getStaffById(staffId);
+//     return orderRepository.findByStatus(OrderStatus.PENDING);
+// }
 
 // Prepare order - change status to PREPARING
 @Transactional
@@ -84,7 +74,7 @@ public Order updateOrderStatus(Long staffId, Long orderId, OrderStatus newStatus
     // Staff can update to PREPARING, OUT_FOR_DELIVERY, or CANCELED
     if (newStatus == OrderStatus.PREPARING || 
         newStatus == OrderStatus.OUT_FOR_DELIVERY || 
-        newStatus == OrderStatus.CANCELED) {
+        newStatus == OrderStatus.CANCELLED) {
         staff.updateOrderStatus(order, newStatus);
         return orderRepository.save(order);
     } else {
@@ -93,16 +83,14 @@ public Order updateOrderStatus(Long staffId, Long orderId, OrderStatus newStatus
 }
 
 // Get order details
-public Order getOrderDetails(Long staffId, Long orderId) {
-    Staff staff = getStaffById(staffId);
+public Order getOrderDetails(Long orderId) {
     return orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
 }
 
 // Mark order as out for delivery
 @Transactional
-public Order markOutForDelivery(Long staffId, Long orderId) {
-    Staff staff = getStaffById(staffId);
+public Order markOutForDelivery(Long orderId) {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
     
@@ -116,13 +104,12 @@ public Order markOutForDelivery(Long staffId, Long orderId) {
 
 // Cancel order
 @Transactional
-public Order cancelOrder(Long staffId, Long orderId) {
-    Staff staff = getStaffById(staffId);
+public Order cancelOrder(Long orderId) {
     Order order = orderRepository.findById(orderId)
             .orElseThrow(() -> new RuntimeException("Order not found"));
     
     if (order.getStatus() != OrderStatus.DELIVERED) {
-        order.setStatus(OrderStatus.CANCELED);
+        order.setStatus(OrderStatus.CANCELLED);
         return orderRepository.save(order);
     } else {
         throw new RuntimeException("Cannot cancel delivered order");
