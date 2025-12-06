@@ -1,16 +1,11 @@
 package com.system.food_delivery_app.service;
 
-<<<<<<< HEAD:src/main/java/com/system/food_delivery_app/service/StaffDeliveryService.java
 import com.restaurant.model.DeliveryStaff;
 import com.restaurant.model.Order;
 import com.restaurant.model.OrderStatus;
 import com.restaurant.repository.DeliveryStaffRepository;
 import com.restaurant.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-=======
-import com.system.food_delivery_app.model.DeliveryStaff;
-import com.system.food_delivery_app.repository.DeliveryStaffRepository;
->>>>>>> 5c7cd28108648ea9d2662b36c833c41f66fda277:src/main/java/com/system/food_delivery_app/service/DeliveryStaffService.java
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
