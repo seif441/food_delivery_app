@@ -1,16 +1,32 @@
 package com.system.food_delivery_app.model;
-package com.example.model;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import jakarta.persistence.*;
+import java.util.List;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Entity
+@DiscriminatorValue(“STAFF”)
 public class Staff extends User {
-    private String staffIdNumber;
 
-    public Staff(String name, String email, String staffIdNumber) {
-        super(name, email, "STAFF");
-        this.staffIdNumber = staffIdNumber;
+
+public List<Order> viewOrders() {
+    return this.getOrders();
+}
+
+public void prepareOrders(Order order) {
+    if (order != null && order.getStatus() == OrderStatus.PENDING) {
+        order.setStatus(OrderStatus.PREPARING);
     }
+}
+
+public void updateOrderStatus(Order order, OrderStatus newStatus) {
+    if (order != null && newStatus != null) {
+        if (newStatus == OrderStatus.PREPARING || 
+            newStatus == OrderStatus.OUT_FOR_DELIVERY || 
+            newStatus == OrderStatus.CANCELED) {
+            order.setStatus(newStatus);
+        }
+    }
+}
+
+
 }

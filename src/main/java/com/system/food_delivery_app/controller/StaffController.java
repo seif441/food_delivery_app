@@ -1,42 +1,168 @@
 package com.system.food_delivery_app.controller;
 
-import com.example.model.Staff;
-import com.example.service.StaffService;
+import com.restaurant.model.Order;
+import com.restaurant.model.OrderStatus;
+import com.restaurant.model.Staff;
+import com.restaurant.service.StaffService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.Map;
 
 @RestController
-@RequestMapping("/api/staff")
+@RequestMapping(”/api/staff”)
+@CrossOrigin(origins = “*”)
 public class StaffController {
-    private final StaffService staffService;
 
-    public StaffController(StaffService staffService) {
-        this.staffService = staffService;
-    }
-    
-    @PostMapping
-    public ResponseEntity<Staff> createStaff(@RequestBody Staff newStaff) {
-        return ResponseEntity.status(201).body(staffService.createStaff(newStaff));
-    }
-    
-    @GetMapping
-    public ResponseEntity<List<Staff>> getAllStaff() {
-        return ResponseEntity.ok(staffService.getAllStaff());
-    }
 
-    @GetMapping("/orders/incoming")
-    public ResponseEntity<List<Long>> getIncomingOrders() {
-        return ResponseEntity.ok(staffService.viewIncomingOrders());
-    }
+@Autowired
+private StaffService staffService;
 
-    @PutMapping("/orders/{orderId}/prepare")
-    public ResponseEntity<String> startPreparation(@PathVariable Long orderId) {
-        return ResponseEntity.ok(staffService.startPreparation(orderId));
+// Get staff profile
+@GetMapping("/{staffId}")
+public ResponseEntity<?> getStaffProfile(@PathVariable Long staffId) {
+    try {
+        Staff staff = staffService.getStaffById(staffId);
+        return ResponseEntity.ok(staff);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
     }
-    
-    @PutMapping("/orders/{orderId}/status")
-    public ResponseEntity<String> updateOrderStatus(@PathVariable Long orderId, @RequestParam String newStatus) {
-        return ResponseEntity.ok(staffService.updateOrderStatus(orderId, newStatus));
+}
+
+// Get all staff members
+@GetMapping
+public ResponseEntity<List<Staff>> getAllStaff() {
+    List<Staff> staffList = staffService.getAllStaff();
+    return ResponseEntity.ok(staffList);
+}
+
+// View all orders
+@GetMapping("/{staffId}/orders")
+public ResponseEntity<?> viewAllOrders(@PathVariable Long staffId) {
+    try {
+        List<Order> orders = staffService.viewAllOrders(staffId);
+        return ResponseEntity.ok(orders);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
     }
+}
+
+// View orders by status
+@GetMapping("/{staffId}/orders/status/{status}")
+public ResponseEntity<?> viewOrdersByStatus(@PathVariable Long staffId, 
+                                            @PathVariable String status) {
+    try {
+        OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+        List<Order> orders = staffService.viewOrdersByStatus(staffId, orderStatus);
+        return ResponseEntity.ok(orders);
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid status value"));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// View pending orders
+@GetMapping("/{staffId}/orders/pending")
+public ResponseEntity<?> viewPendingOrders(@PathVariable Long staffId) {
+    try {
+        List<Order> orders = staffService.viewPendingOrders(staffId);
+        return ResponseEntity.ok(orders);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Get specific order details
+@GetMapping("/{staffId}/orders/{orderId}")
+public ResponseEntity<?> getOrderDetails(@PathVariable Long staffId, 
+                                        @PathVariable Long orderId) {
+    try {
+        Order order = staffService.getOrderDetails(staffId, orderId);
+        return ResponseEntity.ok(order);
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Prepare order (change status to PREPARING)
+@PutMapping("/{staffId}/orders/{orderId}/prepare")
+public ResponseEntity<?> prepareOrder(@PathVariable Long staffId, 
+                                     @PathVariable Long orderId) {
+    try {
+        Order order = staffService.prepareOrder(staffId, orderId);
+        return ResponseEntity.ok(Map.of(
+            "message", "Order marked as preparing",
+            "order", order
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Update order status
+@PutMapping("/{staffId}/orders/{orderId}/status")
+public ResponseEntity<?> updateOrderStatus(@PathVariable Long staffId, 
+                                          @PathVariable Long orderId,
+                                          @RequestBody Map<String, String> request) {
+    try {
+        String statusStr = request.get("status");
+        OrderStatus newStatus = OrderStatus.valueOf(statusStr.toUpperCase());
+        
+        Order order = staffService.updateOrderStatus(staffId, orderId, newStatus);
+        return ResponseEntity.ok(Map.of(
+            "message", "Order status updated successfully",
+            "order", order
+        ));
+    } catch (IllegalArgumentException e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", "Invalid status value"));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Mark order as out for delivery
+@PutMapping("/{staffId}/orders/{orderId}/out-for-delivery")
+public ResponseEntity<?> markOutForDelivery(@PathVariable Long staffId, 
+                                            @PathVariable Long orderId) {
+    try {
+        Order order = staffService.markOutForDelivery(staffId, orderId);
+        return ResponseEntity.ok(Map.of(
+            "message", "Order marked as out for delivery",
+            "order", order
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+// Cancel order
+@PutMapping("/{staffId}/orders/{orderId}/cancel")
+public ResponseEntity<?> cancelOrder(@PathVariable Long staffId, 
+                                    @PathVariable Long orderId) {
+    try {
+        Order order = staffService.cancelOrder(staffId, orderId);
+        return ResponseEntity.ok(Map.of(
+            "message", "Order cancelled successfully",
+            "order", order
+        ));
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(Map.of("error", e.getMessage()));
+    }
+}
+
+
 }
