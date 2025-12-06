@@ -21,11 +21,7 @@ public class StaffController {
         return ResponseEntity.status(201).body(staffService.createStaff(newStaff));
     }
     
-    @GetMapping
-    public ResponseEntity<List<Staff>> getAllStaff() {
-        return ResponseEntity.ok(staffService.getAllStaff());
-    }
-
+    
     @GetMapping("/orders/incoming")
     public ResponseEntity<List<Long>> getIncomingOrders() {
         return ResponseEntity.ok(staffService.viewIncomingOrders());
