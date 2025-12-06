@@ -1,10 +1,18 @@
 package com.system.food_delivery_app.service;
 
+<<<<<<< HEAD
 import com.restaurant.model.Order;
 import com.restaurant.model.OrderStatus;
 import com.restaurant.model.Staff;
 import com.restaurant.repository.OrderRepository;
 import com.restaurant.repository.StaffRepository;
+=======
+
+import com.system.food_delivery_app.dto.StaffRequestDTO;
+import com.system.food_delivery_app.model.Staff;
+import com.system.food_delivery_app.repository.OrderRepository;
+import com.system.food_delivery_app.repository.StaffRepository;
+>>>>>>> 5c7cd28108648ea9d2662b36c833c41f66fda277
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +20,6 @@ import java.util.List;
 
 @Service
 public class StaffService {
-
 
 @Autowired
 private StaffRepository staffRepository;

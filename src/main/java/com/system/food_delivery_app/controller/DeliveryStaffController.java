@@ -1,5 +1,6 @@
 package com.system.food_delivery_app.controller;
 
+<<<<<<< HEAD:src/main/java/com/system/food_delivery_app/controller/StaffDeliveryController.java
 
 import com.restaurant.model.DeliveryStaff;
 import com.restaurant.model.Order;
@@ -7,6 +8,10 @@ import com.restaurant.model.OrderStatus;
 import com.restaurant.service.DeliveryStaffService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+=======
+import com.system.food_delivery_app.model.DeliveryStaff;
+import com.system.food_delivery_app.service.DeliveryStaffService;
+>>>>>>> 5c7cd28108648ea9d2662b36c833c41f66fda277:src/main/java/com/system/food_delivery_app/controller/DeliveryStaffController.java
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;

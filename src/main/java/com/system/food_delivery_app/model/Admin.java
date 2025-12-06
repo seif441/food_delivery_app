@@ -8,7 +8,7 @@ public class Admin extends User {
 
 
     public void addStaff(User staff, Role role) {
-    staff.setRole(role);
+    staff.setRole(role); //SHADY WILL KILL YOU
     }
 public void setRole(User user, Role role) {
     user.setRole(role);    
