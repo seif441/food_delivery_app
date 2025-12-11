@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
-@Table(name = "Categories")
+@Table(name = "categories") // Table name: categories
 public class Category {
 
     @Id
@@ -17,13 +17,10 @@ public class Category {
 
     private String description;
 
-    // Relationship: One Category -> Many Products
-    // "mappedBy" refers to the 'category' field in the Product class
     @OneToMany(mappedBy = "category", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore // Prevents infinite loops when fetching data
+    @JsonIgnore
     private List<Product> products;
 
-    // Constructors
     public Category() {}
 
     public Category(String name, String description) {
@@ -31,7 +28,6 @@ public class Category {
         this.description = description;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

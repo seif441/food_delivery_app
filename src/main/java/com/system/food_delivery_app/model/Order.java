@@ -7,28 +7,25 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
-@Table(name = "orders") // Standard lowercase table name
+@Table(name = "orders") // Table name: orders
 public class Order {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // --- RELATIONSHIP: The Customer (User) ---
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    @JsonIgnoreProperties("orders") // Prevents infinite loop: Order -> Customer -> Order...
+    @JsonIgnoreProperties("orders") 
     private User customer;
 
-    // --- RELATIONSHIP: The Delivery Driver ---
-    // We link to DeliveryStaff specifically to ensure type safety
     @ManyToOne
     @JoinColumn(name = "delivery_staff_id")
-    @JsonIgnoreProperties("orders") // Prevents infinite loop: Order -> Driver -> Order...
+    @JsonIgnoreProperties("orders") 
     private DeliveryStaff deliveryStaff;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
-    @JsonManagedReference // Matches with @JsonBackReference in CartItem
+    @JsonManagedReference
     private List<CartItem> items;
 
     private String paymentMethod = "CASH_ON_DELIVERY";
@@ -39,8 +36,6 @@ public class Order {
     private OrderStatus status;
 
     private LocalDateTime orderDate;
-
-    // --- CONSTRUCTORS, GETTERS, SETTERS ---
 
     public Long getId() { return this.id; }
     public void setId(Long id) { this.id = id; }
@@ -62,5 +57,4 @@ public class Order {
 
     public LocalDateTime getOrderDate() { return this.orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
-
 }

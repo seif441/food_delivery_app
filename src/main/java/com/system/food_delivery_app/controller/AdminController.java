@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admins")
-@CrossOrigin(origins = "*") // Allow frontend access
+@CrossOrigin(origins = "*") 
 public class AdminController {
 
     private final AdminService service;
@@ -23,14 +23,16 @@ public class AdminController {
 
     // --- STAFF MANAGEMENT ---
 
-    // NEW: View all staff members
     @GetMapping("/staff")
     public ResponseEntity<List<Staff>> getAllStaff() {
         return ResponseEntity.ok(service.getAllStaff());
     }
 
+    // --- FIX IS HERE ---
+    // Changed @RequestBody User to @RequestBody Staff
+    // This ensures Jackson creates a Staff object (DTYPE="STAFF") instead of a generic User
     @PostMapping("/staff")
-    public ResponseEntity<User> addStaff(@RequestBody User staff, @RequestParam Role role) {
+    public ResponseEntity<Staff> addStaff(@RequestBody Staff staff, @RequestParam Role role) {
         return ResponseEntity.ok(service.addStaff(staff, role));
     }
 

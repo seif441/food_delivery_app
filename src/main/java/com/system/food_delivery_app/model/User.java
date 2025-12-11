@@ -1,105 +1,69 @@
 package com.system.food_delivery_app.model;
 
-import java.sql.Date;
-import java.util.HashSet;
 import jakarta.persistence.*;
-import java.util.Set;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(name = "Users")
+@Table(name = "users") // Table name: users
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+@DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @NotBlank
     private String name;
-    @Column(nullable = false, unique = true)
+
+    @Email
+    @NotBlank
+    @Column(unique = true)
     private String email;
-    @Column(nullable = false)
+
+    @NotBlank
     private String password;
+
     private String phoneNumber;
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id", nullable = true)
+
+    @ManyToOne
+    @JoinColumn(name = "role_id")
     private Role role;
-    @Column(name = "role_name")
-    private String roleName;
-    private Date createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        this.createdAt = new Date(System.currentTimeMillis());
-    }
-
-    public User(Long id, String name, String email, String password, String phoneNumber, Role role, String roleName, Date createdAt) {
-        this.id = id;
-        this.name = name;
-        this.email = email;
-        this.password = password;
-        this.phoneNumber = phoneNumber;
-        this.role = role;
-        this.roleName = roleName;
-        this.createdAt = createdAt;
-    }
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DeliveryAddress> addresses = new ArrayList<>();
 
     public User() {
     }
 
-
-    public Long getId() {
-        return this.id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public void setName(String name) {
+    public User(String name, String email, String password, String phoneNumber) {
         this.name = name;
-    }
-
-    public String getEmail() {
-        return this.email;
-    }
-
-    public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPassword() {
-        return this.password;
-    }
-
-    public void setPassword(String password) {
         this.password = password;
-    }
-
-    public String getPhoneNumber() {
-        return this.phoneNumber;
-    }
-
-    public void setPhoneNumber(String phoneNumber) {
         this.phoneNumber = phoneNumber;
     }
-    public Date getCreatedAt() {
-        return this.createdAt;
-    }
-    public void setRole(Role role) {
-        this.role = role;
-        if (role != null) {
-            this.roleName = role.getRoleName();
-        }
-    }
-    @JsonIgnore
-    public Role getRole() {
-        return this.role;
-    }
-}
 
-    
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public String getPassword() { return password; }
+    public void setPassword(String password) { this.password = password; }
+
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+
+    public Role getRole() { return role; }
+    public void setRole(Role role) { this.role = role; }
+
+    public List<DeliveryAddress> getAddresses() { return addresses; }
+    public void setAddresses(List<DeliveryAddress> addresses) { this.addresses = addresses; }
+}

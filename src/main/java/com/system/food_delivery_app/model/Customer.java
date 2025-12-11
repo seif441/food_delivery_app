@@ -1,22 +1,24 @@
 package com.system.food_delivery_app.model;
 
 import jakarta.persistence.*;
-import lombok.*;
 import java.util.List;
+import java.util.ArrayList;
 
 @Entity
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
-
+@DiscriminatorValue("CUSTOMER")
 public class Customer extends User {
-    
-    // One customer can have multiple delivery addresses
-    // @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
-    // private List<DeliveryAddress> addresses;
 
-    // One customer can place multiple orders
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    private List<Order> orders;
+    private List<Order> orders = new ArrayList<>();
 
+    public Customer() {
+        super();
+    }
 
+    public Customer(String name, String email, String password, String phoneNumber) {
+        super(name, email, password, phoneNumber);
+    }
+
+    public List<Order> getOrders() { return orders; }
+    public void setOrders(List<Order> orders) { this.orders = orders; }
 }

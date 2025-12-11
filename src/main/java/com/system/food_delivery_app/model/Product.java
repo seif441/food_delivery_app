@@ -3,7 +3,7 @@ package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "Products")
+@Table(name = "products") // Table name: products
 public class Product {
 
     @Id
@@ -22,12 +22,10 @@ public class Product {
     
     private boolean available;
 
-    // Relationship: Many Products -> One Category
-    @ManyToOne(fetch = FetchType.EAGER) // Eager loads category info with the product
-    @JoinColumn(name = "category_id", nullable = false) // Creates Foreign Key column
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    // Constructors
     public Product() {}
 
     public Product(String name, double price, Category category) {
@@ -37,7 +35,6 @@ public class Product {
         this.available = true;
     }
 
-    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
