@@ -28,23 +28,23 @@ public class OrderService {
 
     @Transactional
     public Order placeOrder(Order order) {
-        // Calculate total price based on items
-        double total = 0;
-        if (order.getItems() != null) {
-            total = order.getItems().stream()
-                    .mapToDouble(item -> item.getPrice() * item.getQuantity())
-                    .sum();
+        // FIX: validation to prevent empty orders
+        if (order.getItems() == null || order.getItems().isEmpty()) {
+            throw new RuntimeException("Cannot place an empty order.");
         }
+
+        // Calculate total price
+        double total = order.getItems().stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
 
         order.setTotalPrice(total);
         order.setOrderDate(LocalDateTime.now());
-        order.setStatus(OrderStatus.PENDING); // Initial status
+        order.setStatus(OrderStatus.PENDING);
 
-        // Ensure items are linked to this order (for JPA Cascade)
-        if (order.getItems() != null) {
-            for (var item : order.getItems()) {
-                item.setOrder(order);
-            }
+        // Link items to order (Crucial for Foreign Keys)
+        for (var item : order.getItems()) {
+            item.setOrder(order);
         }
 
         return orderRepository.save(order);
@@ -72,11 +72,13 @@ public class OrderService {
     public Order staffMarkAsPrepared(Long orderId) {
         Order order = getOrderById(orderId);
 
-        // 1. The Staff explicitly changes the status
-        order.setStatus(OrderStatus.PREPARING);
+        // FIX: Change status to PREPARED (Food is ready)
+        // NOT "PREPARING" (which means just started cooking)
+        order.setStatus(OrderStatus.PREPARED); 
+        
         Order savedOrder = orderRepository.save(order);
 
-        // 2. The System reacts by trying to find a driver
+        // Try to find a driver immediately
         assignDriverAutomatically(savedOrder);
 
         return savedOrder;

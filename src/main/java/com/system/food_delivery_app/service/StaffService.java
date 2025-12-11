@@ -8,113 +8,105 @@ import com.system.food_delivery_app.repository.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
 public class StaffService {
 
-@Autowired
-private StaffRepository staffRepository;
+    @Autowired
+    private StaffRepository staffRepository;
 
-@Autowired
-private OrderRepository orderRepository;
+    @Autowired
+    private OrderRepository orderRepository;
 
-public Staff getStaffById(Long staffId) {
-    return staffRepository.findById(staffId)
-            .orElseThrow(() -> new RuntimeException("Staff not found"));
-}
+    @Autowired
+    private OrderService orderService; // To trigger auto-assignment
 
-public List<Staff> getAllStaff() {
-    return staffRepository.findAll();
-}
-
-// public Staff getStaffByEmail(String email) {
-//     return staffRepository.findByEmail(email)
-//             .orElseThrow(() -> new RuntimeException("Staff not found"));
-// }
-
-// View all orders (for staff to manage)
-public List<Order> viewAllOrders() {
-    return orderRepository.findAll();
-}
-
-// View orders by specific status
-// public List<Order> viewOrdersByStatus(OrderStatus status) {
-//     return orderRepository.findByStatus(status);
-// } //SERIAL SHOULD HAVE FIND BY STATUS
-
-// View pending orders
-// public List<Order> viewPendingOrders(Long staffId) {
-//     Staff staff = getStaffById(staffId);
-//     return orderRepository.findByStatus(OrderStatus.PENDING);
-// }
-
-// Prepare order - change status to PREPARING
-@Transactional
-public Order prepareOrder(Long staffId, Long orderId) {
-    Staff staff = getStaffById(staffId);
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    if (order.getStatus() == OrderStatus.PENDING) {
-        staff.prepareOrders(order);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Order cannot be prepared. Current status: " + order.getStatus());
+    // --- STAFF PROFILE ---
+    public Staff getStaffById(Long staffId) {
+        return staffRepository.findById(staffId)
+                .orElseThrow(() -> new RuntimeException("Staff not found"));
     }
-}
 
-// Update order status
-@Transactional
-public Order updateOrderStatus(Long staffId, Long orderId, OrderStatus newStatus) {
-    Staff staff = getStaffById(staffId);
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    // Staff can update to PREPARING, OUT_FOR_DELIVERY, or CANCELED
-    if (newStatus == OrderStatus.PREPARING || 
-        newStatus == OrderStatus.OUT_FOR_DELIVERY || 
-        newStatus == OrderStatus.CANCELLED) {
-        staff.updateOrderStatus(order, newStatus);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Staff cannot set order to " + newStatus + " status");
+    // --- ORDER MANAGEMENT ---
+
+    // 1. View All Orders (Kitchen Display)
+    public List<Order> viewAllOrders() {
+        return orderRepository.findAll();
     }
-}
 
-// Get order details
-public Order getOrderDetails(Long orderId) {
-    return orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-}
-
-// Mark order as out for delivery
-@Transactional
-public Order markOutForDelivery(Long orderId) {
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    if (order.getStatus() == OrderStatus.PREPARING) {
-        order.setStatus(OrderStatus.OUT_FOR_DELIVERY);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Order must be in PREPARING status. Current status: " + order.getStatus());
+    // 2. View Orders by Specific Status (Generic Filter)
+    public List<Order> viewOrdersByStatus(OrderStatus status) {
+        return orderRepository.findByStatus(status);
     }
-}
 
-// Cancel order
-@Transactional
-public Order cancelOrder(Long orderId) {
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    if (order.getStatus() != OrderStatus.DELIVERED) {
-        order.setStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Cannot cancel delivered order");
+    // 3. View Pending Orders (Specifically for Kitchen Queue)
+    public List<Order> viewPendingOrders(Long staffId) {
+        // Validate staff exists first
+        getStaffById(staffId);
+        return orderRepository.findByStatus(OrderStatus.PENDING);
     }
-}
 
+    // 4. Get Single Order Details
+    public Order getOrderDetails(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+    }
 
+    // 5. Start Cooking (PENDING -> PREPARING)
+    @Transactional
+    public Order prepareOrder(Long staffId, Long orderId) {
+        getStaffById(staffId); // Validate staff exists
+        
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() == OrderStatus.PENDING) {
+            order.setStatus(OrderStatus.PREPARING);
+            return orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Order cannot be prepared. Current status: " + order.getStatus());
+        }
+    }
+
+    // 6. Finish Cooking (PREPARING -> PREPARED -> Auto Assign Driver)
+    @Transactional
+    public Order markOutForDelivery(Long orderId) {
+        // We call the OrderService because it has the "Find Driver" logic
+        return orderService.staffMarkAsPrepared(orderId);
+    }
+
+    // 7. Update Status (Manual Override)
+    @Transactional
+    public Order updateOrderStatus(Long staffId, Long orderId, OrderStatus newStatus) {
+        getStaffById(staffId);
+        
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (newStatus == OrderStatus.PREPARING || 
+            newStatus == OrderStatus.PREPARED || 
+            newStatus == OrderStatus.CANCELLED) {
+            
+            order.setStatus(newStatus);
+            return orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Staff cannot manually set order to " + newStatus);
+        }
+    }
+
+    // 8. Cancel Order
+    @Transactional
+    public Order cancelOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (order.getStatus() != OrderStatus.DELIVERED) {
+            order.setStatus(OrderStatus.CANCELLED);
+            return orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Cannot cancel delivered order");
+        }
+    }
 }
