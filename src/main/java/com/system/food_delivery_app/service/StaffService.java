@@ -25,13 +25,13 @@ public Staff getStaffById(Long staffId) {
 }
 
 public List<Staff> getAllStaff() {
-    return staffRepository.findAllStaff();
+    return staffRepository.findAll();
 }
 
-public Staff getStaffByEmail(String email) {
-    return staffRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Staff not found"));
-}
+// public Staff getStaffByEmail(String email) {
+//     return staffRepository.findByEmail(email)
+//             .orElseThrow(() -> new RuntimeException("Staff not found"));
+// }
 
 // View all orders (for staff to manage)
 public List<Order> viewAllOrders() {
