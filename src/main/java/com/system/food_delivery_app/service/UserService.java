@@ -7,66 +7,73 @@ import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.system.food_delivery_app.model.Customer; // Import Customer
 import com.system.food_delivery_app.model.Role;
 import com.system.food_delivery_app.model.User;
-import com.system.food_delivery_app.repository.RoleRepository; // Imported
+import com.system.food_delivery_app.repository.RoleRepository;
 import com.system.food_delivery_app.repository.UserRepository;
 
 @Service
 public class UserService {
     
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository; // Added RoleRepository
-
+    private final RoleRepository roleRepository;
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z]).{8,}$");
 
-    // Updated Constructor to inject RoleRepository
     @Autowired
     public UserService(UserRepository userRepository, RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }
 
-    // --- Register new user (For Customers Only) ---
-    public User registerUser(User user) {
+    // --- Register new user (Creates a CUSTOMER entity) ---
+    public User registerUser(User userData) {
         // 1. Validate required fields
-        if (user.getEmail() == null || user.getPassword() == null || user.getName() == null) {
+        if (userData.getEmail() == null || userData.getPassword() == null || userData.getName() == null) {
             throw new IllegalArgumentException("Name, email, and password are required.");
         }
 
         // 2. Check if email already exists
-        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+        if (userRepository.findByEmail(userData.getEmail()).isPresent()) {
             throw new IllegalArgumentException("Email already registered.");
         }
 
-        // 3. Validate password pattern
-        if (!PASSWORD_PATTERN.matcher(user.getPassword()).matches()) {
+        // 3. Validate password
+        if (!PASSWORD_PATTERN.matcher(userData.getPassword()).matches()) {
             throw new IllegalArgumentException(
                     "Password must be at least 8 characters long and contain at least one letter.");
         }
 
-        // 4. Assign "CUSTOMER" Role automatically
+        // --- CRITICAL CHANGE START ---
+        
+        // 4. Create a CUSTOMER object instead of a generic User
+        // This ensures Hibernate writes "CUSTOMER" into the dtype column
+        Customer customer = new Customer();
+        customer.setName(userData.getName());
+        customer.setEmail(userData.getEmail());
+        customer.setPassword(userData.getPassword()); // Remember to hash this in production!
+        customer.setPhoneNumber(userData.getPhoneNumber());
+
+        // 5. Assign "CUSTOMER" Role
         Role customerRole = roleRepository.findByRoleName("CUSTOMER")
                 .orElseThrow(() -> new RuntimeException("Error: Role 'CUSTOMER' not found. Please run DataSeeder."));
         
-        user.setRole(customerRole);
+        customer.setRole(customerRole);
 
-        // 5. Save and Return
-        return userRepository.save(user);
+        // 6. Save the CUSTOMER entity
+        return userRepository.save(customer);
+        
+        // --- CRITICAL CHANGE END ---
     }
 
     // --- User login (Returns User object so Frontend can check Role) ---
     public User loginUser(String email, String password) {
-        // 1. Find user
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid email or password."));
 
-        // 2. Check Password (Simple comparison for now)
         if (!user.getPassword().equals(password)) {
             throw new IllegalArgumentException("Invalid email or password.");
         }
-
-        // 3. Return the User object (Frontend needs this to check roleName)
         return user;
     }
 
