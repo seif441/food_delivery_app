@@ -1,5 +1,4 @@
-const API_BASE = 'http://localhost:8080/api';
-
+const API_BASE = '/api';
 const api = {
     // --- Auth Headers ---
     getHeaders: () => {
@@ -13,35 +12,47 @@ const api = {
 
     // --- Authentication ---
     login: async (email, password) => {
-        const response = await fetch(`${API_BASE}/auth/login`, {
+        const response = await fetch(`${API_BASE}/users/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        if (!response.ok) throw new Error('Login failed');
-        return await response.json();
+        
+        if (!response.ok) {
+            // Read error text from backend
+            const errorMsg = await response.text(); 
+            throw new Error(errorMsg || 'Login failed');
+        }
+        return await response.json(); // Returns the User Object
     },
 
+    // Register Customer
     registerCustomer: async (userData) => {
-        const response = await fetch(`${API_BASE}/auth/register`, {
+        const response = await fetch(`${API_BASE}/users/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         });
-        if (!response.ok) throw new Error('Registration failed');
+
+        if (!response.ok) {
+            const errorMsg = await response.text();
+            throw new Error(errorMsg || 'Registration failed');
+        }
         return await response.json();
     },
 
     // --- Categories (CategoryService) ---
-    getAllCategories: async () => {
-        const response = await fetch(`${API_BASE}/categories`);
+getAllCategories: async () => {
+        // FIXED: Added "/all" to match Java Controller
+        const response = await fetch(`${API_BASE}/categories/all`); 
         if (!response.ok) return [];
         return await response.json();
     },
 
     // --- Products (ProductService) ---
-    getAllProducts: async () => {
-        const response = await fetch(`${API_BASE}/products`);
+getAllProducts: async () => {
+        // FIXED: Added "/all" to match Java Controller
+        const response = await fetch(`${API_BASE}/products/all`);
         if (!response.ok) return [];
         return await response.json();
     },

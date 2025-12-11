@@ -3,7 +3,7 @@
 // --- Global State ---
 let state = {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    cart: [], // We manage cart locally for UI speed, sync with API on checkout/add
+    cart: [], 
     products: [],
     categories: []
 };
@@ -39,11 +39,12 @@ function updateHeaderUser() {
         `;
         document.getElementById('btn-logout').addEventListener('click', logout);
     } else {
+        // CHANGED: Redirect to auth.html instead of opening modal
         authSection.innerHTML = `
-            <button onclick="openAuthModal()" class="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-semibold transition">
+            <a href="auth.html" class="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-semibold transition">
                 <i data-lucide="user" class="w-5 h-5"></i>
                 <span>Login</span>
-            </button>
+            </a>
         `;
     }
     lucide.createIcons();
@@ -122,7 +123,8 @@ async function loadProducts(catId) {
 // --- 3. Cart Logic & Drawer ---
 
 function addToCart(productId, qty = 1) {
-    if (!state.user) return openAuthModal();
+    // CHANGED: Redirect to Auth Page if not logged in
+    if (!state.user) return window.location.href = 'auth.html';
 
     const product = state.products.find(p => p.id === productId);
     const existing = state.cart.find(i => i.id === productId);
@@ -204,7 +206,8 @@ function closeCartDrawer() {
 }
 
 async function handleCheckout() {
-    if (!state.user) return openAuthModal();
+    // CHANGED: Redirect to Auth Page if not logged in
+    if (!state.user) return window.location.href = 'auth.html';
     
     // Show Success Overlay
     closeCartDrawer();
@@ -244,7 +247,7 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// Auth Modal
+// Auth Modal Functions (kept for compatibility or future use, though currently unused)
 function openAuthModal() {
     document.getElementById('auth-modal').classList.remove('hidden');
     switchAuthTab('login');
@@ -261,49 +264,55 @@ function switchAuthTab(tab) {
     const tabRegister = document.getElementById('tab-register');
 
     if (tab === 'login') {
-        loginForm.classList.remove('hidden');
-        registerForm.classList.add('hidden');
-        tabLogin.classList.add('text-orange-600', 'border-b-2', 'border-orange-600');
-        tabLogin.classList.remove('text-gray-400');
-        tabRegister.classList.remove('text-orange-600', 'border-b-2', 'border-orange-600');
-        tabRegister.classList.add('text-gray-400');
+        loginForm?.classList.remove('hidden');
+        registerForm?.classList.add('hidden');
+        tabLogin?.classList.add('text-orange-600', 'border-b-2', 'border-orange-600');
+        tabLogin?.classList.remove('text-gray-400');
+        tabRegister?.classList.remove('text-orange-600', 'border-b-2', 'border-orange-600');
+        tabRegister?.classList.add('text-gray-400');
     } else {
-        loginForm.classList.add('hidden');
-        registerForm.classList.remove('hidden');
-        tabRegister.classList.add('text-orange-600', 'border-b-2', 'border-orange-600');
-        tabRegister.classList.remove('text-gray-400');
-        tabLogin.classList.remove('text-orange-600', 'border-b-2', 'border-orange-600');
-        tabLogin.classList.add('text-gray-400');
+        loginForm?.classList.add('hidden');
+        registerForm?.classList.remove('hidden');
+        tabRegister?.classList.add('text-orange-600', 'border-b-2', 'border-orange-600');
+        tabRegister?.classList.remove('text-gray-400');
+        tabLogin?.classList.remove('text-orange-600', 'border-b-2', 'border-orange-600');
+        tabLogin?.classList.add('text-gray-400');
     }
 }
 
 function setupEventListeners() {
-    // Auth Forms
-    document.getElementById('form-login').onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        try {
-            const user = await api.login(fd.get('email'), fd.get('password'));
-            localStorage.setItem('user', JSON.stringify(user));
-            state.user = user;
-            closeAuthModal();
-            updateHeaderUser();
-            
-            // Redirect based on role
-            const role = user.role?.name || user.role;
-            if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-            else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
-            else if (role === 'DELIVERY') window.location.href = 'delivery_dashboard.html';
-        } catch(err) { alert(err.message); }
-    };
+    // Auth Forms (If they exist on the page - they might not if redirecting)
+    const loginForm = document.getElementById('form-login');
+    if (loginForm) {
+        loginForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            try {
+                const user = await api.login(fd.get('email'), fd.get('password'));
+                localStorage.setItem('user', JSON.stringify(user));
+                state.user = user;
+                closeAuthModal();
+                updateHeaderUser();
+                
+                // Redirect based on role
+                const role = user.role?.name || user.role;
+                if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
+                else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
+                else if (role === 'DELIVERY') window.location.href = 'delivery_dashboard.html';
+            } catch(err) { alert(err.message); }
+        };
+    }
 
-    document.getElementById('form-register').onsubmit = async (e) => {
-        e.preventDefault();
-        const fd = new FormData(e.target);
-        try {
-            await api.registerCustomer(Object.fromEntries(fd));
-            alert('Account created! Please login.');
-            switchAuthTab('login');
-        } catch(err) { alert(err.message); }
-    };
+    const registerForm = document.getElementById('form-register');
+    if (registerForm) {
+        registerForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const fd = new FormData(e.target);
+            try {
+                await api.registerCustomer(Object.fromEntries(fd));
+                alert('Account created! Please login.');
+                switchAuthTab('login');
+            } catch(err) { alert(err.message); }
+        };
+    }
 }
