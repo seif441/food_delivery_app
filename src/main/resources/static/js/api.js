@@ -1,5 +1,4 @@
-const API_BASE = 'http://localhost:8080/api';
-
+const API_BASE = '/api';
 const api = {
     // --- Auth Headers ---
     getHeaders: () => {
@@ -33,15 +32,17 @@ const api = {
     },
 
     // --- Categories (CategoryService) ---
-    getAllCategories: async () => {
-        const response = await fetch(`${API_BASE}/categories`);
+getAllCategories: async () => {
+        // FIXED: Added "/all" to match Java Controller
+        const response = await fetch(`${API_BASE}/categories/all`); 
         if (!response.ok) return [];
         return await response.json();
     },
 
     // --- Products (ProductService) ---
-    getAllProducts: async () => {
-        const response = await fetch(`${API_BASE}/products`);
+getAllProducts: async () => {
+        // FIXED: Added "/all" to match Java Controller
+        const response = await fetch(`${API_BASE}/products/all`);
         if (!response.ok) return [];
         return await response.json();
     },
