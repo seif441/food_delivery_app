@@ -1,13 +1,30 @@
 const API_BASE = '/api';
 
+// FIXED: No localStorage - use in-memory state only
 const api = {
+    currentUser: null,
+
     // --- Helper: Get Auth Headers ---
     getHeaders: () => {
-        const user = JSON.parse(localStorage.getItem('user'));
         const headers = { 'Content-Type': 'application/json' };
         // If you implement JWT later, uncomment the line below:
-        // if (user && user.token) headers['Authorization'] = `Bearer ${user.token}`;
+        if (api.currentUser && api.currentUser.token) {
+            headers['Authorization'] = `Bearer ${api.currentUser.token}`;
+        }
         return headers;
+    },
+
+    // User Management (replaces localStorage)
+    setUser: (user) => {
+        api.currentUser = user;
+    },
+
+    getUser: () => {
+        return api.currentUser;
+    },
+
+    clearUser: () => {
+        api.currentUser = null;
     },
 
     // ============================
@@ -65,54 +82,97 @@ const api = {
     },
 
     // ============================
-    // 3. SHOPPING CART (New)
+    // 3. SHOPPING CART (Fixed)
     // ============================
 
     // Get (or create) cart for a logged-in user
     getCartByUser: async (userId) => {
-        const response = await fetch(`${API_BASE}/carts/user/${userId}`);
-        if (!response.ok) throw new Error('Failed to load cart');
-        return await response.json();
+        try {
+            const response = await fetch(`${API_BASE}/carts/user/${userId}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to load cart: ${errorText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Cart fetch error:', error);
+            throw error;
+        }
     },
 
     // Add Item to Cart
     addToCart: async (cartId, productId, quantity) => {
-        const response = await fetch(`${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`, {
-            method: 'POST',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error('Failed to add to cart');
-        return await response.json();
+        try {
+            const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: api.getHeaders()
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to add item: ${errorText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Add to cart error:', error);
+            throw error;
+        }
     },
 
     // Update Item Quantity
     updateCartItem: async (cartId, productId, quantity) => {
-        const response = await fetch(`${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`, {
-            method: 'PUT',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error('Failed to update cart');
-        return await response.json();
+        try {
+            const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`;
+            const response = await fetch(url, {
+                method: 'PUT',
+                headers: api.getHeaders()
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to update item: ${errorText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Update cart error:', error);
+            throw error;
+        }
     },
 
     // Remove Item Completely
     removeItemFromCart: async (cartId, productId) => {
-        const response = await fetch(`${API_BASE}/carts/${cartId}/items?productId=${productId}`, {
-            method: 'DELETE',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error('Failed to remove item');
-        return await response.json();
+        try {
+            const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}`;
+            const response = await fetch(url, {
+                method: 'DELETE',
+                headers: api.getHeaders()
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to remove item: ${errorText}`);
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Remove item error:', error);
+            throw error;
+        }
     },
 
     // Clear entire cart
     clearCart: async (cartId) => {
-        const response = await fetch(`${API_BASE}/carts/${cartId}`, {
-            method: 'DELETE',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error('Failed to clear cart');
-        return true;
+        try {
+            const response = await fetch(`${API_BASE}/carts/${cartId}`, {
+                method: 'DELETE',
+                headers: api.getHeaders()
+            });
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Failed to clear cart: ${errorText}`);
+            }
+            return true;
+        } catch (error) {
+            console.error('Clear cart error:', error);
+            throw error;
+        }
     },
 
     // ============================

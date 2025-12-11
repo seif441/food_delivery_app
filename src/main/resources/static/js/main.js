@@ -1,12 +1,12 @@
 // src/main/resources/static/js/main.js
 
-// --- Global State ---
+// --- Global Application State ---
 let state = {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    cartId: null,      // New: Store backend Cart ID
-    cartItems: [],     // New: Syncs with backend cart items
-    products: [],
-    categories: []
+    cartId: null,      // Stores the ID of the cart from the database
+    cartItems: [],     // Stores the array of items in the cart
+    products: [],      // Stores loaded products
+    categories: []     // Stores loaded categories
 };
 
 // --- Initialization ---
@@ -14,20 +14,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
     updateHeaderUser();
     
-    // Load Data
+    // 1. Load Initial Data
     await loadCategories();
     await loadProducts('all');
     
-    // Load Cart if user is logged in
+    // 2. Initialize Cart (if logged in)
     if (state.user) {
         await refreshCart();
     }
     
-    // Setup Global Event Listeners
+    // 3. Setup Global Event Listeners
     setupEventListeners();
 });
 
-// --- 1. Header & Auth Logic ---
+// ==========================================
+// 1. HEADER & AUTHENTICATION UI
+// ==========================================
 
 function updateHeaderUser() {
     const authSection = document.getElementById('nav-auth-section');
@@ -60,12 +62,18 @@ function logout() {
     state.user = null;
     state.cartId = null;
     state.cartItems = [];
+    
+    // Reset UI
     updateHeaderUser();
     updateCartUI();
+    
+    // Optional: Redirect to home
     window.location.href = 'index.html';
 }
 
-// --- 2. Data Loading (Products/Categories) ---
+// ==========================================
+// 2. DATA LOADING (MENU)
+// ==========================================
 
 async function loadCategories() {
     try {
@@ -74,6 +82,7 @@ async function loadCategories() {
         const rail = document.getElementById('category-rail');
         if(!rail) return;
 
+        // Render Category Buttons
         rail.innerHTML = `
             <button onclick="loadProducts('all')" class="flex flex-col items-center gap-3 min-w-[80px] group">
                 <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-orange-500 text-white shadow-orange-200">🍽️</div>
@@ -88,24 +97,28 @@ async function loadCategories() {
                 </button>
             `).join('')}
         `;
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Error loading categories:", e); }
 }
 
 async function loadProducts(catId) {
     const grid = document.getElementById('products-grid');
     if (!grid) return;
     
+    // Show Loading Spinner
     grid.innerHTML = '<div class="col-span-full text-center py-10"><div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto"></div></div>';
     
     try {
+        // Fetch Data
         const products = catId === 'all' ? await api.getAllProducts() : await api.getProductsByCategory(catId);
         state.products = products;
         
+        // Handle Empty State
         if(products.length === 0) {
             grid.innerHTML = '<div class="col-span-full text-center text-gray-400">No items found.</div>';
             return;
         }
 
+        // Render Product Cards
         grid.innerHTML = products.map(p => `
             <div onclick="openDetailModal(${p.id})" class="group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1">
                 <div class="relative h-48 rounded-2xl overflow-hidden bg-gray-100">
@@ -117,7 +130,7 @@ async function loadProducts(catId) {
                     <p class="text-sm text-gray-500 mt-1 line-clamp-1">${p.description || ''}</p>
                     <div class="mt-4 flex items-center justify-between">
                         <span class="text-xl font-extrabold text-gray-900">$${p.price.toFixed(2)}</span>
-                        <button onclick="event.stopPropagation(); addToCart(${p.id})" class="bg-gray-100 text-gray-900 p-3 rounded-xl hover:bg-orange-600 hover:text-white transition-all shadow-sm">
+                        <button onclick="event.stopPropagation(); addToCart(${p.id})" class="bg-gray-100 text-gray-900 p-3 rounded-xl hover:bg-orange-600 hover:text-white transition-all shadow-sm group-hover:shadow-md">
                             <i data-lucide="plus" class="w-5 h-5"></i>
                         </button>
                     </div>
@@ -125,37 +138,46 @@ async function loadProducts(catId) {
             </div>
         `).join('');
         lucide.createIcons();
-    } catch(e) { console.error(e); }
+    } catch(e) { console.error("Error loading products:", e); }
 }
 
-// --- 3. Cart Logic (Backend Integrated) ---
+// ==========================================
+// 3. CART LOGIC (BACKEND INTEGRATED)
+// ==========================================
 
 async function refreshCart() {
     if (!state.user) return;
     try {
+        // Fetch the Cart from Backend using User ID
         const cart = await api.getCartByUser(state.user.id);
+        
+        // Update Local State
         state.cartId = cart.id;
         state.cartItems = cart.items || [];
+        
         updateCartUI();
     } catch (e) {
-        console.error("Cart error:", e);
+        console.error("Cart sync error:", e);
     }
 }
 
 async function addToCart(productId, qty = 1) {
-    // 1. Check Login
+    // 1. Enforce Login
     if (!state.user) return window.location.href = 'auth.html';
 
     try {
-        // 2. Ensure Cart Exists
+        // 2. Ensure we have a Cart ID
         if (!state.cartId) await refreshCart();
 
-        // 3. API Call
+        // 3. Send Request to Backend
+        // The backend returns the updated Cart object
         const updatedCart = await api.addToCart(state.cartId, productId, qty);
         
         // 4. Update State & UI
         state.cartItems = updatedCart.items;
         updateCartUI();
+        
+        // 5. Open Drawer
         openCartDrawer();
         
     } catch (e) {
@@ -167,7 +189,7 @@ async function addToCart(productId, qty = 1) {
 async function updateCartQty(productId, delta) {
     if (!state.cartId) return;
 
-    // Find the item in local state to get current quantity
+    // Find the item to get current quantity
     const item = state.cartItems.find(i => i.product.id === productId);
     if (!item) return;
 
@@ -176,10 +198,10 @@ async function updateCartQty(productId, delta) {
     try {
         let updatedCart;
         if (newQty <= 0) {
-            // Remove item
+            // Case: Remove Item
             updatedCart = await api.removeItemFromCart(state.cartId, productId);
         } else {
-            // Update quantity
+            // Case: Update Quantity
             updatedCart = await api.updateCartItem(state.cartId, productId, newQty);
         }
         
@@ -191,19 +213,18 @@ async function updateCartQty(productId, delta) {
 }
 
 function updateCartUI() {
-    // Backend returns structure: { items: [ { product: {...}, quantity: 2, price: ... } ] }
-    
-    // Calculate Totals
-    const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0); // Backend calculates item price (unit * qty)
+    // Calculate Totals based on current state
+    // Note: Backend 'item.price' is usually (Unit Price * Quantity).
+    const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0);
     const count = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-    // Update Badges
+    // 1. Update Cart Badges (Desktop & Mobile)
     document.querySelectorAll('.cart-badge').forEach(el => {
         el.textContent = count;
         el.classList.toggle('hidden', count === 0);
     });
 
-    // Render Drawer Items
+    // 2. Render Items in Drawer
     const cartContainer = document.getElementById('cart-items-container');
     if (cartContainer) {
         if (state.cartItems.length === 0) {
@@ -214,7 +235,7 @@ function updateCartUI() {
                 </div>`;
         } else {
             cartContainer.innerHTML = state.cartItems.map(item => `
-                <div class="flex gap-4 mb-4">
+                <div class="flex gap-4 mb-4 animate-fade-in">
                     <img src="${item.product.imageUrl || 'https://placehold.co/100'}" class="w-20 h-20 rounded-xl object-cover bg-gray-100" onerror="this.src='https://placehold.co/100'">
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-1">
@@ -222,9 +243,9 @@ function updateCartUI() {
                             <span class="font-bold text-gray-900">$${item.price.toFixed(2)}</span>
                         </div>
                         <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-1 w-fit mt-2">
-                            <button onclick="updateCartQty(${item.product.id}, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                            <button onclick="updateCartQty(${item.product.id}, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm hover:text-red-500 transition-colors"><i data-lucide="minus" class="w-3 h-3"></i></button>
                             <span class="text-sm font-bold w-4 text-center">${item.quantity}</span>
-                            <button onclick="updateCartQty(${item.product.id}, 1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                            <button onclick="updateCartQty(${item.product.id}, 1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm hover:text-green-500 transition-colors"><i data-lucide="plus" class="w-3 h-3"></i></button>
                         </div>
                     </div>
                 </div>
@@ -232,11 +253,11 @@ function updateCartUI() {
         }
     }
 
-    // Update Totals Text
+    // 3. Update Totals Section
     const subtotalEl = document.getElementById('cart-subtotal');
     const totalEl = document.getElementById('cart-total');
     if (subtotalEl) subtotalEl.textContent = `$${total.toFixed(2)}`;
-    if (totalEl) totalEl.textContent = `$${(total + 2.99).toFixed(2)}`;
+    if (totalEl) totalEl.textContent = `$${(total + 2.99).toFixed(2)}`; // Adding $2.99 Delivery Fee
 
     lucide.createIcons();
 }
@@ -251,31 +272,37 @@ function closeCartDrawer() {
 
 async function handleCheckout() {
     if (!state.user) return window.location.href = 'auth.html';
-    if (state.cartItems.length === 0) return alert("Cart is empty");
+    if (state.cartItems.length === 0) return alert("Your basket is empty!");
 
-    // Close drawer & show overlay
+    // Close drawer & Show Success
     closeCartDrawer();
     const overlay = document.getElementById('success-overlay');
     overlay.classList.remove('hidden');
     
-    // Simulate Order placement (or call api.placeOrder if implemented)
+    // Simulate Processing
     setTimeout(async () => {
-        // Clear cart in backend
+        // Clear Cart in Backend
         if(state.cartId) await api.clearCart(state.cartId);
         
+        // Reset Local State
         state.cartItems = [];
         updateCartUI();
+        
+        // Hide Overlay and Redirect
         overlay.classList.add('hidden');
-        window.location.href = 'orders.html'; // Redirect to orders page
-    }, 2000);
+        window.location.href = 'orders.html'; 
+    }, 2500);
 }
 
-// --- 4. Modals (Detail & Auth) ---
+// ==========================================
+// 4. MODALS (DETAIL & AUTH)
+// ==========================================
 
 function openDetailModal(productId) {
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
 
+    // Populate Modal Data
     const imgEl = document.getElementById('modal-img');
     imgEl.src = product.imageUrl || 'https://placehold.co/600';
     imgEl.onerror = () => imgEl.src = 'https://placehold.co/600';
@@ -284,9 +311,8 @@ function openDetailModal(productId) {
     document.getElementById('modal-desc').textContent = product.description || 'Delicious food ready to be delivered.';
     document.getElementById('modal-price').textContent = `$${product.price.toFixed(2)}`;
     
-    // Setup Add Button
+    // Recreate Add Button to clear old listeners
     const btn = document.getElementById('modal-add-btn');
-    // Remove old listeners by cloning
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
     
@@ -302,7 +328,6 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// Auth Modal functions (if used on auth.html)
 function switchAuthTab(tab) {
     const loginForm = document.getElementById('auth-login-form');
     const registerForm = document.getElementById('auth-register-form');
@@ -327,7 +352,7 @@ function switchAuthTab(tab) {
 }
 
 function setupEventListeners() {
-    // These forms usually exist on auth.html
+    // Auth Forms (checked if present on page)
     const loginForm = document.getElementById('form-login');
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
@@ -338,12 +363,12 @@ function setupEventListeners() {
                 localStorage.setItem('user', JSON.stringify(user));
                 state.user = user;
                 
-                // Redirect based on role
-                const role = user.role?.name || user.role; // Handle object or string role
+                // Role Redirects
+                const role = user.role?.roleName || user.role; 
                 if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
                 else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
                 else if (role === 'DELIVERY_STAFF') window.location.href = 'delivery_dashboard.html';
-                else window.location.href = 'index.html'; // Customer
+                else window.location.href = 'index.html'; 
                 
             } catch(err) { 
                 alert(err.message); 
@@ -358,7 +383,6 @@ function setupEventListeners() {
             const fd = new FormData(e.target);
             const data = Object.fromEntries(fd);
             
-            // Basic validation
             if(data.password.length < 8) return alert("Password must be at least 8 chars");
 
             try {
