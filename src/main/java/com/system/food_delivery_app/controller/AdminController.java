@@ -2,6 +2,7 @@ package com.system.food_delivery_app.controller;
 
 import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.model.Role;
+import com.system.food_delivery_app.model.Staff;
 import com.system.food_delivery_app.model.User;
 import com.system.food_delivery_app.service.AdminService;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/admins")
+@CrossOrigin(origins = "*") // Allow frontend access
 public class AdminController {
 
     private final AdminService service;
@@ -19,22 +21,35 @@ public class AdminController {
         this.service = service;
     }
 
-    // Staff management
+    // --- STAFF MANAGEMENT ---
+
+    // NEW: View all staff members
+    @GetMapping("/staff")
+    public ResponseEntity<List<Staff>> getAllStaff() {
+        return ResponseEntity.ok(service.getAllStaff());
+    }
+
     @PostMapping("/staff")
     public ResponseEntity<User> addStaff(@RequestBody User staff, @RequestParam Role role) {
         return ResponseEntity.ok(service.addStaff(staff, role));
     }
 
-    // Delete any user account
+    @PutMapping("/role/{userId}")
+    public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam Role role) {
+        return ResponseEntity.ok(service.setRole(userId, role));
+    }
+
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<Void> deleteAccount(@PathVariable Long userId) {
         service.deleteAccount(userId);
         return ResponseEntity.noContent().build();
     }
 
-    @PutMapping("/role/{userId}")
-    public ResponseEntity<User> setRole(@PathVariable Long userId, @RequestParam Role role) {
-        return ResponseEntity.ok(service.setRole(userId, role));
+    // --- MENU MANAGEMENT ---
+
+    @GetMapping("/menu")
+    public ResponseEntity<List<Product>> viewMenu() {
+        return ResponseEntity.ok(service.viewMenu());
     }
 
     @PostMapping("/menu")
@@ -53,12 +68,6 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/menu")
-    public ResponseEntity<List<Product>> viewMenu() {
-        return ResponseEntity.ok(service.viewMenu());
-    }
-
-    // Price & availability
     @PutMapping("/products/{productId}/price")
     public ResponseEntity<Product> updatePrice(@PathVariable Long productId, @RequestParam double newPrice) {
         return ResponseEntity.ok(service.updatePrice(productId, newPrice));
