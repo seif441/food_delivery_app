@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Delivery Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-2xl mx-auto p-4">
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                <i data-lucide="bike" class="text-green-600"></i> My Deliveries
+            </h1>
+            <button onclick="logout()" class="text-sm text-gray-500">Logout</button>
+        </div>
+
+        <h2 class="font-bold text-gray-500 uppercase text-xs mb-4 tracking-wider">Ready for Pickup / In Transit</h2>
+        
+        <div id="delivery-list" class="space-y-4">
+            <!-- Delivery Cards -->
+        </div>
+
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        lucide.createIcons();
+        function logout() { localStorage.clear(); window.location.href = 'auth.html'; }
+
+        async function loadDeliveries() {
+            // In real app, filter by assigned driver. Here, showing all OUT_FOR_DELIVERY
+            const orders = await api.viewAllOrders();
+            const deliveries = orders.filter(o => o.status === 'OUT_FOR_DELIVERY');
+
+            const container = document.getElementById('delivery-list');
+            if(deliveries.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-400">No active deliveries</div>';
+                return;
+            }
+
+            container.innerHTML = deliveries.map(o => `
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <div>
+                        <div class="font-bold text-lg text-gray-900">Order #${o.id}</div>
+                        <div class="text-gray-500 text-sm">Customer: ${o.customerName || 'Guest'}</div>
+                        <div class="text-gray-500 text-sm mt-1">📍 ${o.address || '123 Main St, New York'}</div>
+                    </div>
+                    <button onclick="markDelivered(${o.id})" class="bg-green-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-200">
+                        Complete
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        async function markDelivered(id) {
+            if(confirm('Confirm delivery complete?')) {
+                await api.updateOrderStatus(id, 'DELIVERED');
+                loadDeliveries();
+            }
+        }
+
+        loadDeliveries();
+    </script>
+</body>
+</html>

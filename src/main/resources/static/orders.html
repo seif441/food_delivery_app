@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Crave - Past Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-xl">
+        <header class="p-6 border-b border-gray-100 flex items-center gap-4 sticky top-0 bg-white/95 backdrop-blur z-20">
+            <button onclick="window.location.href='index.html'" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+            <h1 class="text-xl font-extrabold">Previous Orders</h1>
+        </header>
+
+        <div id="orders-list" class="p-6">
+            <!-- Injected by JS -->
+        </div>
+    </div>
+    <script src="js/app.js"></script>
+</body>
+</html>

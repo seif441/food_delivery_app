@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitchen Display</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gray-800 min-h-screen text-white">
+    <div class="p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold flex items-center gap-3">
+                <i data-lucide="chef-hat"></i> Kitchen Queue
+            </h1>
+            <button onclick="loadOrders()" class="bg-gray-700 px-4 py-2 rounded hover:bg-gray-600">Refresh</button>
+        </div>
+
+        <!-- Orders Grid -->
+        <div id="kitchen-grid" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Order Cards Injected Here -->
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script>
+        lucide.createIcons();
+        
+        async function loadOrders() {
+            // Fetch all orders and filter for PENDING or PREPARING
+            const orders = await api.viewAllOrders(); 
+            const kitchenOrders = orders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING');
+            
+            const container = document.getElementById('kitchen-grid');
+            container.innerHTML = kitchenOrders.map(o => `
+                <div class="bg-gray-700 p-4 rounded-xl border-l-4 ${o.status === 'PENDING' ? 'border-red-500' : 'border-yellow-500'}">
+                    <div class="flex justify-between font-bold text-lg mb-2">
+                        <span>#${o.id}</span>
+                        <span class="text-sm px-2 py-1 rounded bg-gray-600">${o.status}</span>
+                    </div>
+                    <div class="space-y-1 mb-4 text-gray-300">
+                        ${o.items ? o.items.map(i => `<div>${i.quantity}x ${i.productName}</div>`).join('') : 'Items loading...'}
+                    </div>
+                    
+                    ${o.status === 'PENDING' 
+                        ? `<button onclick="updateStatus(${o.id}, 'PREPARING')" class="w-full bg-yellow-600 hover:bg-yellow-700 py-2 rounded font-bold">Start Cooking</button>`
+                        : `<button onclick="updateStatus(${o.id}, 'OUT_FOR_DELIVERY')" class="w-full bg-green-600 hover:bg-green-700 py-2 rounded font-bold">Ready for Pickup</button>`
+                    }
+                </div>
+            `).join('');
+        }
+
+        async function updateStatus(id, status) {
+            await api.updateOrderStatus(id, status);
+            loadOrders();
+        }
+
+        loadOrders(); // Initial Load
+        setInterval(loadOrders, 10000); // Auto-refresh every 10s
+    </script>
+</body>
+</html>
