@@ -3,11 +3,12 @@ package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "users") // Table name: users
+@Table(name = "users")
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorColumn(name = "dtype", discriminatorType = DiscriminatorType.STRING)
 public class User {
@@ -29,6 +30,10 @@ public class User {
 
     private String phoneNumber;
 
+    // --- AUDIT FIELD ---
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
     @ManyToOne
     @JoinColumn(name = "role_id")
     private Role role;
@@ -46,6 +51,14 @@ public class User {
         this.phoneNumber = phoneNumber;
     }
 
+    // --- AUTOMATIC TIMESTAMP ---
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
+
+    // --- Getters and Setters ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -61,6 +74,8 @@ public class User {
     public String getPhoneNumber() { return phoneNumber; }
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
 
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    
     public Role getRole() { return role; }
     public void setRole(Role role) { this.role = role; }
 

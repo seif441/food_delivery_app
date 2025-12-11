@@ -3,7 +3,8 @@
 // --- Global State ---
 let state = {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    cart: [], 
+    cartId: null,      // New: Store backend Cart ID
+    cartItems: [],     // New: Syncs with backend cart items
     products: [],
     categories: []
 };
@@ -16,6 +17,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load Data
     await loadCategories();
     await loadProducts('all');
+    
+    // Load Cart if user is logged in
+    if (state.user) {
+        await refreshCart();
+    }
     
     // Setup Global Event Listeners
     setupEventListeners();
@@ -39,7 +45,6 @@ function updateHeaderUser() {
         `;
         document.getElementById('btn-logout').addEventListener('click', logout);
     } else {
-        // CHANGED: Redirect to auth.html instead of opening modal
         authSection.innerHTML = `
             <a href="auth.html" class="flex items-center gap-2 text-gray-600 hover:text-orange-600 font-semibold transition">
                 <i data-lucide="user" class="w-5 h-5"></i>
@@ -53,10 +58,11 @@ function updateHeaderUser() {
 function logout() {
     localStorage.removeItem('user');
     state.user = null;
-    state.cart = [];
+    state.cartId = null;
+    state.cartItems = [];
     updateHeaderUser();
     updateCartUI();
-    window.location.reload();
+    window.location.href = 'index.html';
 }
 
 // --- 2. Data Loading (Products/Categories) ---
@@ -87,6 +93,8 @@ async function loadCategories() {
 
 async function loadProducts(catId) {
     const grid = document.getElementById('products-grid');
+    if (!grid) return;
+    
     grid.innerHTML = '<div class="col-span-full text-center py-10"><div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto"></div></div>';
     
     try {
@@ -101,7 +109,7 @@ async function loadProducts(catId) {
         grid.innerHTML = products.map(p => `
             <div onclick="openDetailModal(${p.id})" class="group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1">
                 <div class="relative h-48 rounded-2xl overflow-hidden bg-gray-100">
-                    <img src="${p.imageUrl || 'https://placehold.co/400'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500">
+                    <img src="${p.imageUrl || 'https://placehold.co/400'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://placehold.co/400'">
                     ${!p.available ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold">SOLD OUT</div>' : ''}
                 </div>
                 <div class="mt-4 px-2 pb-2">
@@ -120,38 +128,74 @@ async function loadProducts(catId) {
     } catch(e) { console.error(e); }
 }
 
-// --- 3. Cart Logic & Drawer ---
+// --- 3. Cart Logic (Backend Integrated) ---
 
-function addToCart(productId, qty = 1) {
-    // CHANGED: Redirect to Auth Page if not logged in
-    if (!state.user) return window.location.href = 'auth.html';
-
-    const product = state.products.find(p => p.id === productId);
-    const existing = state.cart.find(i => i.id === productId);
-
-    if (existing) {
-        existing.qty += qty;
-    } else {
-        state.cart.push({ ...product, qty });
+async function refreshCart() {
+    if (!state.user) return;
+    try {
+        const cart = await api.getCartByUser(state.user.id);
+        state.cartId = cart.id;
+        state.cartItems = cart.items || [];
+        updateCartUI();
+    } catch (e) {
+        console.error("Cart error:", e);
     }
-    
-    // Sync with API (Optional: Implement api.addToCart here)
-    updateCartUI();
-    openCartDrawer();
 }
 
-function updateCartQty(productId, delta) {
-    const item = state.cart.find(i => i.id === productId);
-    if (item) {
-        item.qty += delta;
-        if (item.qty <= 0) state.cart = state.cart.filter(i => i.id !== productId);
+async function addToCart(productId, qty = 1) {
+    // 1. Check Login
+    if (!state.user) return window.location.href = 'auth.html';
+
+    try {
+        // 2. Ensure Cart Exists
+        if (!state.cartId) await refreshCart();
+
+        // 3. API Call
+        const updatedCart = await api.addToCart(state.cartId, productId, qty);
+        
+        // 4. Update State & UI
+        state.cartItems = updatedCart.items;
         updateCartUI();
+        openCartDrawer();
+        
+    } catch (e) {
+        alert('Failed to add item. Please try again.');
+        console.error(e);
+    }
+}
+
+async function updateCartQty(productId, delta) {
+    if (!state.cartId) return;
+
+    // Find the item in local state to get current quantity
+    const item = state.cartItems.find(i => i.product.id === productId);
+    if (!item) return;
+
+    const newQty = item.quantity + delta;
+    
+    try {
+        let updatedCart;
+        if (newQty <= 0) {
+            // Remove item
+            updatedCart = await api.removeItemFromCart(state.cartId, productId);
+        } else {
+            // Update quantity
+            updatedCart = await api.updateCartItem(state.cartId, productId, newQty);
+        }
+        
+        state.cartItems = updatedCart.items;
+        updateCartUI();
+    } catch (e) {
+        console.error("Update qty error", e);
     }
 }
 
 function updateCartUI() {
-    const total = state.cart.reduce((sum, i) => sum + (i.price * i.qty), 0);
-    const count = state.cart.reduce((sum, i) => sum + i.qty, 0);
+    // Backend returns structure: { items: [ { product: {...}, quantity: 2, price: ... } ] }
+    
+    // Calculate Totals
+    const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0); // Backend calculates item price (unit * qty)
+    const count = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
     // Update Badges
     document.querySelectorAll('.cart-badge').forEach(el => {
@@ -162,25 +206,25 @@ function updateCartUI() {
     // Render Drawer Items
     const cartContainer = document.getElementById('cart-items-container');
     if (cartContainer) {
-        if (state.cart.length === 0) {
+        if (state.cartItems.length === 0) {
             cartContainer.innerHTML = `
                 <div class="h-full flex flex-col items-center justify-center text-center opacity-50">
                     <i data-lucide="shopping-bag" class="w-12 h-12 text-gray-400 mb-4"></i>
                     <p class="font-bold text-gray-900">Basket is empty</p>
                 </div>`;
         } else {
-            cartContainer.innerHTML = state.cart.map(item => `
+            cartContainer.innerHTML = state.cartItems.map(item => `
                 <div class="flex gap-4 mb-4">
-                    <img src="${item.imageUrl || 'https://placehold.co/100'}" class="w-20 h-20 rounded-xl object-cover bg-gray-100">
+                    <img src="${item.product.imageUrl || 'https://placehold.co/100'}" class="w-20 h-20 rounded-xl object-cover bg-gray-100" onerror="this.src='https://placehold.co/100'">
                     <div class="flex-1">
                         <div class="flex justify-between items-start mb-1">
-                            <h4 class="font-bold text-gray-900 line-clamp-1">${item.name}</h4>
-                            <span class="font-bold text-gray-900">$${(item.price * item.qty).toFixed(2)}</span>
+                            <h4 class="font-bold text-gray-900 line-clamp-1">${item.product.name}</h4>
+                            <span class="font-bold text-gray-900">$${item.price.toFixed(2)}</span>
                         </div>
                         <div class="flex items-center gap-3 bg-gray-50 rounded-lg p-1 w-fit mt-2">
-                            <button onclick="updateCartQty(${item.id}, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="minus" class="w-3 h-3"></i></button>
-                            <span class="text-sm font-bold w-4 text-center">${item.qty}</span>
-                            <button onclick="updateCartQty(${item.id}, 1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                            <button onclick="updateCartQty(${item.product.id}, -1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                            <span class="text-sm font-bold w-4 text-center">${item.quantity}</span>
+                            <button onclick="updateCartQty(${item.product.id}, 1)" class="w-7 h-7 flex items-center justify-center bg-white rounded shadow-sm"><i data-lucide="plus" class="w-3 h-3"></i></button>
                         </div>
                     </div>
                 </div>
@@ -188,11 +232,11 @@ function updateCartUI() {
         }
     }
 
-    // Update Totals
+    // Update Totals Text
     const subtotalEl = document.getElementById('cart-subtotal');
     const totalEl = document.getElementById('cart-total');
     if (subtotalEl) subtotalEl.textContent = `$${total.toFixed(2)}`;
-    if (totalEl) totalEl.textContent = `$${(total + 2.99).toFixed(2)}`; // $2.99 Delivery
+    if (totalEl) totalEl.textContent = `$${(total + 2.99).toFixed(2)}`;
 
     lucide.createIcons();
 }
@@ -206,20 +250,24 @@ function closeCartDrawer() {
 }
 
 async function handleCheckout() {
-    // CHANGED: Redirect to Auth Page if not logged in
     if (!state.user) return window.location.href = 'auth.html';
-    
-    // Show Success Overlay
+    if (state.cartItems.length === 0) return alert("Cart is empty");
+
+    // Close drawer & show overlay
     closeCartDrawer();
     const overlay = document.getElementById('success-overlay');
     overlay.classList.remove('hidden');
     
-    // Simulate API call
-    setTimeout(() => {
-        state.cart = []; // Clear cart
+    // Simulate Order placement (or call api.placeOrder if implemented)
+    setTimeout(async () => {
+        // Clear cart in backend
+        if(state.cartId) await api.clearCart(state.cartId);
+        
+        state.cartItems = [];
         updateCartUI();
         overlay.classList.add('hidden');
-    }, 3000);
+        window.location.href = 'orders.html'; // Redirect to orders page
+    }, 2000);
 }
 
 // --- 4. Modals (Detail & Auth) ---
@@ -228,14 +276,21 @@ function openDetailModal(productId) {
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
 
-    document.getElementById('modal-img').src = product.imageUrl || 'https://placehold.co/600';
+    const imgEl = document.getElementById('modal-img');
+    imgEl.src = product.imageUrl || 'https://placehold.co/600';
+    imgEl.onerror = () => imgEl.src = 'https://placehold.co/600';
+
     document.getElementById('modal-title').textContent = product.name;
-    document.getElementById('modal-desc').textContent = product.description || 'Tasty food.';
-    document.getElementById('modal-price').textContent = `$${product.price}`;
+    document.getElementById('modal-desc').textContent = product.description || 'Delicious food ready to be delivered.';
+    document.getElementById('modal-price').textContent = `$${product.price.toFixed(2)}`;
     
     // Setup Add Button
     const btn = document.getElementById('modal-add-btn');
-    btn.onclick = () => {
+    // Remove old listeners by cloning
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.onclick = () => {
         addToCart(product.id, 1);
         closeDetailModal();
     };
@@ -247,16 +302,7 @@ function closeDetailModal() {
     document.getElementById('detail-modal').classList.add('hidden');
 }
 
-// Auth Modal Functions (kept for compatibility or future use, though currently unused)
-function openAuthModal() {
-    document.getElementById('auth-modal').classList.remove('hidden');
-    switchAuthTab('login');
-}
-
-function closeAuthModal() {
-    document.getElementById('auth-modal').classList.add('hidden');
-}
-
+// Auth Modal functions (if used on auth.html)
 function switchAuthTab(tab) {
     const loginForm = document.getElementById('auth-login-form');
     const registerForm = document.getElementById('auth-register-form');
@@ -281,7 +327,7 @@ function switchAuthTab(tab) {
 }
 
 function setupEventListeners() {
-    // Auth Forms (If they exist on the page - they might not if redirecting)
+    // These forms usually exist on auth.html
     const loginForm = document.getElementById('form-login');
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
@@ -291,15 +337,17 @@ function setupEventListeners() {
                 const user = await api.login(fd.get('email'), fd.get('password'));
                 localStorage.setItem('user', JSON.stringify(user));
                 state.user = user;
-                closeAuthModal();
-                updateHeaderUser();
                 
                 // Redirect based on role
-                const role = user.role?.name || user.role;
+                const role = user.role?.name || user.role; // Handle object or string role
                 if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
                 else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
-                else if (role === 'DELIVERY') window.location.href = 'delivery_dashboard.html';
-            } catch(err) { alert(err.message); }
+                else if (role === 'DELIVERY_STAFF') window.location.href = 'delivery_dashboard.html';
+                else window.location.href = 'index.html'; // Customer
+                
+            } catch(err) { 
+                alert(err.message); 
+            }
         };
     }
 
@@ -308,11 +356,18 @@ function setupEventListeners() {
         registerForm.onsubmit = async (e) => {
             e.preventDefault();
             const fd = new FormData(e.target);
+            const data = Object.fromEntries(fd);
+            
+            // Basic validation
+            if(data.password.length < 8) return alert("Password must be at least 8 chars");
+
             try {
-                await api.registerCustomer(Object.fromEntries(fd));
+                await api.registerCustomer(data);
                 alert('Account created! Please login.');
                 switchAuthTab('login');
-            } catch(err) { alert(err.message); }
+            } catch(err) { 
+                alert(err.message); 
+            }
         };
     }
 }
