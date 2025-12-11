@@ -3,7 +3,6 @@ package com.system.food_delivery_app.controller;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-// import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,46 +16,50 @@ import com.system.food_delivery_app.model.User;
 import com.system.food_delivery_app.service.UserService;
 
 @RestController
-@RequestMapping("/users")
-
+@RequestMapping("/api/users")
 public class UserController {
-    @Autowired
+
     private final UserService userService;
 
+    @Autowired // Best practice: Constructor Injection
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    // User registration
-
+    // --- User Registration ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         try {
             User savedUser = userService.registerUser(user);
             return ResponseEntity.ok(savedUser);
         } catch (IllegalArgumentException ex) {
-            // Return error message to frontend
+            // Return specific error message (e.g., "Email already registered")
+            return ResponseEntity.badRequest().body(ex.getMessage());
+        } catch (RuntimeException ex) {
+            // Catch generic runtime exceptions (like "Role not found")
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
 
+    // --- User Login (UPDATED) ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            String token = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
-            return ResponseEntity.ok(token);
+            // Updated: Now receives a User object instead of String token
+            User user = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
+            return ResponseEntity.ok(user);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
 
-    // Get all users
+    // --- Get All Users ---
     @GetMapping("/")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // Get user by email
+    // --- Get User by Email ---
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return userService.findByEmail(email)
@@ -64,17 +67,24 @@ public class UserController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // Update user profile
+    // --- Update User Profile ---
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateProfile(id, user));
+        try {
+            return ResponseEntity.ok(userService.updateProfile(id, user));
+        } catch (RuntimeException ex) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
-    // Delete user
+    // --- Delete User ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteAccount(id);
-        return ResponseEntity.noContent().build();
+        try {
+            userService.deleteAccount(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
-
 }

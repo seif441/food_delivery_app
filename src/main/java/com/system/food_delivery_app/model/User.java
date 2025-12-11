@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 @Entity
 @Table(name = "Users")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+//@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -95,6 +95,9 @@ public class User {
         if (role != null) {
             this.roleName = role.getRoleName();
         }
+    }
+    public String getRoleName() {
+        return roleName;
     }
     @JsonIgnore
     public Role getRole() {
