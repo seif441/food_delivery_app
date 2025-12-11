@@ -1,109 +1,82 @@
 package com.system.food_delivery_app.service;
 
-import com.restaurant.model.DeliveryStaff;
-import com.restaurant.model.Order;
-import com.restaurant.model.OrderStatus;
-import com.restaurant.repository.DeliveryStaffRepository;
-import com.restaurant.repository.OrderRepository;
+import com.system.food_delivery_app.model.DeliveryStaff;
+import com.system.food_delivery_app.model.Order;
+import com.system.food_delivery_app.model.OrderStatus;
+import com.system.food_delivery_app.repository.DeliveryStaffRepository;
+import com.system.food_delivery_app.repository.OrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class DeliveryStaffService {
 
+    @Autowired
+    private DeliveryStaffRepository deliveryStaffRepository;
 
-@Autowired
-private DeliveryStaffRepository deliveryStaffRepository;
+    @Autowired
+    private OrderRepository orderRepository;
 
-@Autowired
-private OrderRepository orderRepository;
+    // --- HELPER METHODS ---
+    public DeliveryStaff getDeliveryStaffById(Long id) {
+        return deliveryStaffRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Delivery staff not found"));
+    }
 
-public DeliveryStaff getDeliveryStaffById(Long deliveryStaffId) {
-    return deliveryStaffRepository.findById(deliveryStaffId)
-            .orElseThrow(() -> new RuntimeException("Delivery staff not found"));
-}
+    // --- DRIVER ACTIONS ---
 
-public List<DeliveryStaff> getAllDeliveryStaff() {
-    return deliveryStaffRepository.findAllDeliveryStaff();
-}
+    // 1. View Orders Assigned to ME (Only the active one)
+    public List<Order> viewAssignedOrders(Long deliveryStaffId) {
+        // Validation
+        getDeliveryStaffById(deliveryStaffId);
+        // Fetch only OUT_FOR_DELIVERY orders assigned to this ID
+        return orderRepository.findByDeliveryStaffIdAndStatus(deliveryStaffId, OrderStatus.OUT_FOR_DELIVERY);
+    }
 
-public DeliveryStaff getDeliveryStaffByEmail(String email) {
-    return deliveryStaffRepository.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("Delivery staff not found"));
-}
+    // 2. Mark Order as DELIVERED (Finish the job)
+    @Transactional
+    public Order completeDelivery(Long deliveryStaffId, Long orderId) {
+        // Get Staff
+        DeliveryStaff driver = getDeliveryStaffById(deliveryStaffId);
+        
+        // Get Order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
 
-// View assigned orders (OUT_FOR_DELIVERY status)
-public List<Order> viewAssignedOrders(Long deliveryStaffId) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    
-    // Get all orders with OUT_FOR_DELIVERY status
-    List<Order> allOutForDelivery = orderRepository.findByStatus(OrderStatus.OUT_FOR_DELIVERY);
-    
-    return allOutForDelivery;
-}
+        // Security Check: Is this order actually assigned to this driver?
+        if (order.getDeliveryStaff() == null || !order.getDeliveryStaff().getId().equals(deliveryStaffId)) {
+            throw new RuntimeException("Access Denied: This order is not assigned to you.");
+        }
 
-// View specific assigned order
-public Order viewAssignedOrder(Long deliveryStaffId, Long orderId) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    if (order.getStatus() != OrderStatus.OUT_FOR_DELIVERY && 
-        order.getStatus() != OrderStatus.DELIVERED) {
-        throw new RuntimeException("This order is not assigned for delivery");
+        // Logic Check: Status
+        if (order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
+            // A. Update Order Status
+            order.setStatus(OrderStatus.DELIVERED);
+            
+            // B. IMPORTANT: Make Driver Available Again!
+            driver.setAvailable(true);
+            
+            // C. Save Both
+            deliveryStaffRepository.save(driver);
+            return orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Order is not currently out for delivery.");
+        }
+    }
+
+    // 3. View My History (Delivered orders)
+    public List<Order> getDeliveryHistory(Long deliveryStaffId) {
+        getDeliveryStaffById(deliveryStaffId);
+        return orderRepository.findByDeliveryStaffIdAndStatus(deliveryStaffId, OrderStatus.DELIVERED);
     }
     
-    return order;
-}
-
-// Mark order as delivered
-@Transactional
-public Order markAsDelivered(Long deliveryStaffId, Long orderId) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    if (order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
-        deliveryStaff.updateDeliveryStatus(order);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Order must be OUT_FOR_DELIVERY. Current status: " + order.getStatus());
+    // 4. Toggle Availability (Manual override if driver wants to take a break)
+    public DeliveryStaff toggleAvailability(Long id) {
+        DeliveryStaff driver = getDeliveryStaffById(id);
+        driver.setAvailable(!driver.isAvailable());
+        return deliveryStaffRepository.save(driver);
     }
-}
-
-// Update delivery status (wrapper method)
-@Transactional
-public Order updateDeliveryStatus(Long deliveryStaffId, Long orderId, OrderStatus newStatus) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    Order order = orderRepository.findById(orderId)
-            .orElseThrow(() -> new RuntimeException("Order not found"));
-    
-    // Delivery staff can only mark as DELIVERED
-    if (newStatus == OrderStatus.DELIVERED && order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
-        deliveryStaff.updateDeliveryStatus(order);
-        return orderRepository.save(order);
-    } else {
-        throw new RuntimeException("Delivery staff can only mark OUT_FOR_DELIVERY orders as DELIVERED");
-    }
-}
-
-// Get delivery history for staff
-public List<Order> getDeliveryHistory(Long deliveryStaffId) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    
-    // Return all delivered orders (in real app, you'd track which staff delivered which order)
-    return orderRepository.findByStatus(OrderStatus.DELIVERED);
-}
-
-// Get active deliveries count
-public Long getActiveDeliveriesCount(Long deliveryStaffId) {
-    DeliveryStaff deliveryStaff = getDeliveryStaffById(deliveryStaffId);
-    List<Order> activeDeliveries = orderRepository.findByStatus(OrderStatus.OUT_FOR_DELIVERY);
-    return (long) activeDeliveries.size();
-}
-
-
 }
