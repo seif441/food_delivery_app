@@ -41,6 +41,7 @@
         </div>
 
         <div class="px-8 pb-8">
+            <!-- LOGIN FORM -->
             <form id="login-form" class="space-y-5">
                 <div>
                     <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1.5">Email</label>
@@ -63,6 +64,7 @@
                 </button>
             </form>
 
+            <!-- REGISTER FORM -->
             <form id="register-form" class="space-y-4 hidden">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
@@ -163,23 +165,30 @@
                 const loggedInUser = await api.login(fd.get('email'), fd.get('password'));
                 localStorage.setItem('user', JSON.stringify(loggedInUser));
                 
-                console.log("SERVER RESPONSE:", loggedInUser); // Debugging
+                console.log("SERVER RESPONSE:", loggedInUser); 
 
                 // 1. Get the role safely (handle case differences)
                 let role = (loggedInUser.roleName || loggedInUser.role?.roleName || "").toUpperCase();
                 
-                // 2. DEBUG ALERT: If role is missing, tell the user why!
+                // 2. DEBUG ALERT if role is missing
                 if (!role || role === "") {
-                    alert("⚠️ LOGIN SUCCESSFUL BUT ROLE IS MISSING!\n\nThe Backend did not send 'roleName'.\n\nPlease go to User.java and add:\n\npublic String getRoleName() { return roleName; }");
+                    alert("⚠️ LOGIN SUCCESSFUL BUT ROLE IS MISSING!\n\nThe Backend did not send 'roleName'.");
                 }
 
                 console.log("DETECTED ROLE:", role);
 
+                // --- FIXED REDIRECTION LOGIC ---
                 setTimeout(() => {
-                    if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
-                    else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
-                    else if (role === 'DELIVERY') window.location.href = 'delivery_dashboard.html';
-                    else window.location.href = 'index.html';
+                    if (role === 'ADMIN') {
+                        window.location.href = 'admin_dashboard.html';
+                    } else if (role === 'STAFF') {
+                        window.location.href = 'staff_dashboard.html';
+                    } else if (role === 'DELIVERY' || role === 'DELIVERY_STAFF') { 
+                        // ^ FIXED: Checks for both short and full role names
+                        window.location.href = 'delivery_dashboard.html';
+                    } else {
+                        window.location.href = 'index.html';
+                    }
                 }, 500);
 
             } catch (err) {

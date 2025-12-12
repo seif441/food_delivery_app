@@ -1,4 +1,5 @@
-const API_BASE = '/api';
+// FIXED: Point to your running Spring Boot backend on port 5005
+const API_BASE = 'http://localhost:5005/api';
 
 const api = {
     // 1. Session Persistence: Load user immediately
@@ -86,16 +87,13 @@ const api = {
     },
 
     // ============================
-    // 3. SHOPPING CART (Restored)
+    // 3. SHOPPING CART
     // ============================
 
     getCartByUser: async (userId) => {
         try {
             const response = await fetch(`${API_BASE}/carts/user/${userId}`);
-            if (!response.ok) {
-                // If 404, usually implies no cart or backend issue.
-                throw new Error('Failed to load cart');
-            }
+            if (!response.ok) throw new Error('Failed to load cart');
             return await response.json();
         } catch (error) {
             console.error('Cart fetch error:', error);
