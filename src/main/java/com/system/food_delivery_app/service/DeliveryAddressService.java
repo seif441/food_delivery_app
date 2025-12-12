@@ -2,7 +2,6 @@ package com.system.food_delivery_app.service;
 
 import com.system.food_delivery_app.model.DeliveryAddress;
 import com.system.food_delivery_app.repository.DeliveryAddressRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
