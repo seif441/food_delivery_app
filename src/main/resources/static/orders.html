@@ -2,22 +2,137 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Crave - Past Orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crave - Your Orders</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="css/style.css">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Custom Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen">
-    <div class="max-w-2xl mx-auto bg-white min-h-screen shadow-xl">
-        <header class="p-6 border-b border-gray-100 flex items-center gap-4 sticky top-0 bg-white/95 backdrop-blur z-20">
-            <button onclick="window.location.href='index.html'" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-            <h1 class="text-xl font-extrabold">Previous Orders</h1>
-        </header>
+<body class="bg-gray-50 text-gray-900 pb-24 md:pb-0 min-h-screen">
 
-        <div id="orders-list" class="p-6">
-            <!-- Injected by JS -->
+    <!-- Header -->
+    <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <button onclick="window.location.href='index.html'" class="p-2 -ml-2 hover:bg-gray-100 rounded-full text-gray-600 transition">
+                    <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                </button>
+                <h1 class="text-xl font-extrabold tracking-tight">Your Orders</h1>
+            </div>
+            <!-- Help Icon -->
+            <button class="text-orange-600 font-semibold text-sm hover:underline">Help</button>
         </div>
-    </div>
-    <script src="js/app.js"></script>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 pt-6">
+        
+        <!-- Tabs -->
+        <div class="flex p-1 bg-gray-200/50 rounded-xl mb-6 relative">
+            <div id="tab-indicator" class="absolute top-1 left-1 w-[calc(50%-4px)] h-[calc(100%-8px)] bg-white rounded-lg shadow-sm transition-all duration-300 ease-out transform translate-x-0"></div>
+            <button onclick="OrderManager.switchTab('active')" class="flex-1 relative z-10 py-2.5 text-sm font-bold text-center text-gray-900 transition-colors" id="tab-active">Active</button>
+            <button onclick="OrderManager.switchTab('past')" class="flex-1 relative z-10 py-2.5 text-sm font-bold text-center text-gray-500 transition-colors" id="tab-past">Past Orders</button>
+        </div>
+
+        <!-- Orders Container -->
+        <div id="orders-list" class="space-y-4">
+            <!-- Content injected by JS -->
+        </div>
+
+        <!-- Loading Skeleton (Used while data is being fetched/processed) -->
+        <div id="loading-state" class="hidden space-y-4">
+            <div class="bg-white p-4 rounded-2xl h-32 animate-pulse"></div>
+            <div class="bg-white p-4 rounded-2xl h-32 animate-pulse"></div>
+        </div>
+
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-100 py-4 px-6 z-40 flex justify-between items-center">
+        <a href="index.html" class="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-600 transition">
+            <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="text-[10px]">Home</span>
+        </a>
+        
+        <button class="flex flex-col items-center gap-1 text-orange-600">
+            <i data-lucide="clock" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold">Orders</span>
+        </button>
+        
+        <button onclick="window.location.href='index.html'" class="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-600 transition">
+            <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+            <span class="text-[10px]">Cart</span>
+        </button>
+        
+        <button class="flex flex-col items-center gap-1 text-gray-400 hover:text-orange-600 transition">
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px]">Profile</span>
+        </button>
+    </nav>
+
+    <!-- ================================================================= -->
+    <!-- SECTION 1: SYSTEM DATA INJECTION (REMOVE THIS BLOCK IN PRODUCTION) -->
+    <!-- In your real system, you will inject this data via backend template 
+         or fetch it from an API. I've placed it here so the Preview works. -->
+    <script>
+        window.orders = [
+            {
+                id: "ORD-9928",
+                date: "Today, 1:30 PM",
+                status: "preparing", 
+                restaurant: "Burger King",
+                logo: "https://images.unsplash.com/photo-1571091718767-18b5b1457add?auto=format&fit=crop&w=100&q=80",
+                items: ["Whopper Meal (Large)", "Onion Rings"],
+                total: 15.99,
+                itemCount: 2
+            },
+            {
+                id: "ORD-8821",
+                date: "Yesterday, 8:45 PM",
+                status: "delivered",
+                restaurant: "Sushi Master",
+                logo: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=100&q=80",
+                items: ["Spicy Tuna Roll", "Salmon Sashimi", "Miso Soup"],
+                total: 32.50,
+                itemCount: 3
+            },
+            {
+                id: "ORD-7763",
+                date: "Mon, Oct 24",
+                status: "delivered",
+                restaurant: "Pizza Hut",
+                logo: "https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?auto=format&fit=crop&w=100&q=80",
+                items: ["Pepperoni Feast", "Garlic Bread"],
+                total: 21.00,
+                itemCount: 2
+            },
+            {
+                id: "ORD-1120",
+                date: "Sun, Oct 23",
+                status: "cancelled",
+                restaurant: "Taco Bell",
+                logo: "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=100&q=80",
+                items: ["Crunchy Taco Supreme", "Burrito"],
+                total: 12.45,
+                itemCount: 2
+            }
+        ];
+    </script>
+    <script src="js/orders.js"></script>
 </body>
 </html>

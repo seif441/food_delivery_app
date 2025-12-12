@@ -17,7 +17,7 @@ public class DataSeeder implements CommandLineRunner {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
     }
-
+    
     @Override
     public void run(String... args) throws Exception {
         // 1. Create Roles if they don't exist
