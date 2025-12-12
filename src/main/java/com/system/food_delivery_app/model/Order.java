@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
-@Table(name = "orders") // Table name: orders
+@Table(name = "orders") 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Prevents Lazy Loading crashes
 public class Order {
 
     @Id
@@ -16,12 +17,12 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    @JsonIgnoreProperties("orders") 
+    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler"}) 
     private User customer;
 
     @ManyToOne
     @JoinColumn(name = "delivery_staff_id")
-    @JsonIgnoreProperties("orders") 
+    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler"}) 
     private DeliveryStaff deliveryStaff;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
