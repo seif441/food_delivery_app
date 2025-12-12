@@ -1,10 +1,8 @@
 package com.system.food_delivery_app.controller;
 
 import com.system.food_delivery_app.model.DeliveryAddress;
-import com.system.food_delivery_app.repository.UserRepository;
 import com.system.food_delivery_app.service.DeliveryAddressService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,8 +14,6 @@ import java.util.List;
 public class DeliveryAddressController {
 
     private final DeliveryAddressService deliveryAddressService;
-    @Autowired
-    private UserRepository userRepository;
     public DeliveryAddressController(DeliveryAddressService deliveryAddressService) {
         this.deliveryAddressService = deliveryAddressService;
     }
