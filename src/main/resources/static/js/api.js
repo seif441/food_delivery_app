@@ -69,6 +69,18 @@ const api = {
         return await response.json();
     },
 
+    // NEW FUNCTION
+    addCategory: async (description) => {
+        // We send 'description' as BOTH description and name to satisfy database rules
+        const response = await fetch(`${API_BASE}/categories/add`, {
+            method: 'POST',
+            headers: api.getHeaders(),
+            body: JSON.stringify({ description: description, name: description }) 
+        });
+        if (!response.ok) throw new Error("Failed to add category");
+        return await response.json();
+    },
+
     getAllProducts: async () => {
         const response = await fetch(`${API_BASE}/products/all`);
         if (!response.ok) return [];
@@ -179,9 +191,25 @@ const api = {
     // 4. ADMIN & STAFF DASHBOARDS
     // ============================
 
+    // NEW FUNCTION
+    getAllUsers: async () => {
+        const response = await fetch(`${API_BASE}/admins/users`, { headers: api.getHeaders() });
+        return response.ok ? await response.json() : [];
+    },
+
+    // NEW FUNCTION
+    deleteUser: async (id) => {
+        const response = await fetch(`${API_BASE}/admins/users/${id}`, { 
+            method: 'DELETE', 
+            headers: api.getHeaders() 
+        });
+        if (!response.ok) throw new Error("Failed to delete user");
+    },
+
+
     // Admin: Add new Staff
     addStaffMember: async (userData, roleName) => {
-        const response = await fetch(`${API_BASE}/admins/staff?role=${roleName}`, {
+        const response = await fetch(`${API_BASE}/admins/staff?roleName=${roleName}`, {
             method: 'POST',
             headers: api.getHeaders(),
             body: JSON.stringify(userData)
@@ -192,7 +220,7 @@ const api = {
 
     // Admin: Add new Product
     addProduct: async (productDTO) => {
-        const response = await fetch(`${API_BASE}/admins/menu`, {
+    const response = await fetch(`${API_BASE}/products/add`, {
             method: 'POST',
             headers: api.getHeaders(),
             body: JSON.stringify(productDTO)
@@ -216,5 +244,21 @@ const api = {
             headers: api.getHeaders()
         });
         return await response.json();
-    }
+    },
+
+    deleteCategory: async (id) => {
+        const response = await fetch(`${API_BASE}/categories/delete/${id}`, {
+            method: 'DELETE',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to delete category");
+    },
+
+    deleteProduct: async (id) => {
+        const response = await fetch(`${API_BASE}/products/delete/${id}`, {
+            method: 'DELETE',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to delete product");
+    },
 };
