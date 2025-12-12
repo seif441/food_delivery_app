@@ -12,11 +12,12 @@ import com.system.food_delivery_app.service.OrderService;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "*") // Allows your Frontend (React/Angular/Mobile) to connect
+@CrossOrigin(origins = "*") 
 public class OrderController {
 
     @Autowired
     private OrderService orderService;
+    
     @GetMapping("/statuses")
     public ResponseEntity<OrderStatus[]> getStatuses() {
         return ResponseEntity.ok(OrderStatus.values());
@@ -26,23 +27,27 @@ public class OrderController {
     //  CUSTOMER ENDPOINTS
     // =========================================================================
 
-    // 1. Place a new Order
-    // POST /api/orders/place
     @PostMapping("/place")
     public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
         Order newOrder = orderService.placeOrder(order);
         return ResponseEntity.ok(newOrder);
     }
 
-    // 2. Get Order History for a Customer
-    // GET /api/orders/customer/5
+    // --- UPDATED: Added Error Handling for Debugging ---
     @GetMapping("/customer/{customerId}")
-    public ResponseEntity<List<Order>> getOrdersByCustomer(@PathVariable Long customerId) {
-        return ResponseEntity.ok(orderService.getOrdersByCustomer(customerId));
+    public ResponseEntity<?> getOrdersByCustomer(@PathVariable Long customerId) {
+        try {
+            System.out.println("Fetching orders for Customer ID: " + customerId);
+            List<Order> orders = orderService.getOrdersByCustomer(customerId);
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            // This prints the REAL error to your IntelliJ/Eclipse Console
+            e.printStackTrace(); 
+            // This sends the error text to the Frontend so you can read it
+            return ResponseEntity.status(500).body("Server Error: " + e.getMessage());
+        }
     }
 
-    // 3. Cancel Order (Only if PENDING)
-    // DELETE /api/orders/101
     @DeleteMapping("/{id}")
     public ResponseEntity<String> cancelOrder(@PathVariable Long id) {
         orderService.cancelOrder(id);
@@ -53,11 +58,8 @@ public class OrderController {
     //  KITCHEN / STAFF ENDPOINTS
     // =========================================================================
 
-    // 4. Mark Order as Prepared (Triggers Auto-Driver Assignment)
-    // PUT /api/orders/101/prepared
     @PutMapping("/{id}/prepared")
     public ResponseEntity<Order> markOrderPrepared(@PathVariable Long id) {
-        // Staff clicks "Ready" -> System finds Driver -> Status becomes OUT_FOR_DELIVERY
         Order updatedOrder = orderService.staffMarkAsPrepared(id);
         return ResponseEntity.ok(updatedOrder);
     }
@@ -66,22 +68,16 @@ public class OrderController {
     //  ADMIN / GENERAL ENDPOINTS
     // =========================================================================
 
-    // 5. Get Single Order Details
-    // GET /api/orders/101
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
-    // 6. Get All Orders (Admin Dashboard)
-    // GET /api/orders/all
     @GetMapping("/all")
     public ResponseEntity<List<Order>> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
-    // 7. Manual Status Update (Admin Override)
-    // PUT /api/orders/101/status?status=DELIVERED
     @PutMapping("/{id}/status")
     public ResponseEntity<Order> updateStatus(@PathVariable Long id, @RequestParam OrderStatus status) {
         return ResponseEntity.ok(orderService.updateStatus(id, status));
