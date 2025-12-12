@@ -1,10 +1,3 @@
-
-        /**
-         * Orders Page Logic
-         * Handles rendering, tab switching, and interactions.
-         * Expects a global `orders` array to be present.
-         */
-
         const OrderManager = {
             currentTab: 'active',
             

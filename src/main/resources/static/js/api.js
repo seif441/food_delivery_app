@@ -1,22 +1,22 @@
 const API_BASE = '/api';
 
-// FIXED: No localStorage - use in-memory state only
 const api = {
-    currentUser: null,
+    // 1. Session Persistence: Load user immediately
+    currentUser: JSON.parse(localStorage.getItem('user')) || null,
 
     // --- Helper: Get Auth Headers ---
     getHeaders: () => {
         const headers = { 'Content-Type': 'application/json' };
-        // If you implement JWT later, uncomment the line below:
         if (api.currentUser && api.currentUser.token) {
             headers['Authorization'] = `Bearer ${api.currentUser.token}`;
         }
         return headers;
     },
 
-    // User Management (replaces localStorage)
+    // --- User Session Management ---
     setUser: (user) => {
         api.currentUser = user;
+        localStorage.setItem('user', JSON.stringify(user));
     },
 
     getUser: () => {
@@ -25,6 +25,7 @@ const api = {
 
     clearUser: () => {
         api.currentUser = null;
+        localStorage.removeItem('user');
     },
 
     // ============================
@@ -42,7 +43,10 @@ const api = {
             const errorMsg = await response.text();
             throw new Error(errorMsg || 'Login failed');
         }
-        return await response.json();
+        
+        const user = await response.json();
+        api.setUser(user); 
+        return user;
     },
 
     registerCustomer: async (userData) => {
@@ -82,16 +86,15 @@ const api = {
     },
 
     // ============================
-    // 3. SHOPPING CART (Fixed)
+    // 3. SHOPPING CART (Restored)
     // ============================
 
-    // Get (or create) cart for a logged-in user
     getCartByUser: async (userId) => {
         try {
             const response = await fetch(`${API_BASE}/carts/user/${userId}`);
             if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to load cart: ${errorText}`);
+                // If 404, usually implies no cart or backend issue.
+                throw new Error('Failed to load cart');
             }
             return await response.json();
         } catch (error) {
@@ -100,7 +103,6 @@ const api = {
         }
     },
 
-    // Add Item to Cart
     addToCart: async (cartId, productId, quantity) => {
         try {
             const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`;
@@ -108,10 +110,7 @@ const api = {
                 method: 'POST',
                 headers: api.getHeaders()
             });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to add item: ${errorText}`);
-            }
+            if (!response.ok) throw new Error('Failed to add item');
             return await response.json();
         } catch (error) {
             console.error('Add to cart error:', error);
@@ -119,7 +118,6 @@ const api = {
         }
     },
 
-    // Update Item Quantity
     updateCartItem: async (cartId, productId, quantity) => {
         try {
             const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}&quantity=${quantity}`;
@@ -127,10 +125,7 @@ const api = {
                 method: 'PUT',
                 headers: api.getHeaders()
             });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to update item: ${errorText}`);
-            }
+            if (!response.ok) throw new Error('Failed to update item');
             return await response.json();
         } catch (error) {
             console.error('Update cart error:', error);
@@ -138,7 +133,6 @@ const api = {
         }
     },
 
-    // Remove Item Completely
     removeItemFromCart: async (cartId, productId) => {
         try {
             const url = `${API_BASE}/carts/${cartId}/items?productId=${productId}`;
@@ -146,10 +140,7 @@ const api = {
                 method: 'DELETE',
                 headers: api.getHeaders()
             });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to remove item: ${errorText}`);
-            }
+            if (!response.ok) throw new Error('Failed to remove item');
             return await response.json();
         } catch (error) {
             console.error('Remove item error:', error);
@@ -157,17 +148,13 @@ const api = {
         }
     },
 
-    // Clear entire cart
     clearCart: async (cartId) => {
         try {
             const response = await fetch(`${API_BASE}/carts/${cartId}`, {
                 method: 'DELETE',
                 headers: api.getHeaders()
             });
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Failed to clear cart: ${errorText}`);
-            }
+            if (!response.ok) throw new Error('Failed to clear cart');
             return true;
         } catch (error) {
             console.error('Clear cart error:', error);
@@ -179,7 +166,6 @@ const api = {
     // 4. ADMIN & STAFF DASHBOARDS
     // ============================
 
-    // Admin: Add new Staff
     addStaffMember: async (userData, roleName) => {
         const response = await fetch(`${API_BASE}/admins/staff?role=${roleName}`, {
             method: 'POST',
@@ -190,7 +176,6 @@ const api = {
         return await response.json();
     },
 
-    // Admin: Add new Product
     addProduct: async (productDTO) => {
         const response = await fetch(`${API_BASE}/admins/menu`, {
             method: 'POST',
@@ -201,20 +186,39 @@ const api = {
         return await response.json();
     },
 
-    // Staff: View All Orders
-    viewAllOrders: async () => {
-        const response = await fetch(`${API_BASE}/staff/orders`, { 
-            headers: api.getHeaders() 
+    // --- Staff Specific Endpoints ---
+    
+    getStaffProfile: async (staffId) => {
+        const response = await fetch(`${API_BASE}/staff/${staffId}`, {
+            headers: api.getHeaders()
         });
-        return response.ok ? await response.json() : [];
+        if (!response.ok) throw new Error('Failed to fetch profile');
+        return await response.json();
     },
 
-    // Staff: Update Order Status (Cooking, Delivered, etc.)
-    updateOrderStatus: async (orderId, status) => {
-        const response = await fetch(`${API_BASE}/staff/orders/${orderId}/status?newStatus=${status}`, {
+    getStaffOrders: async (staffId) => {
+        const response = await fetch(`${API_BASE}/staff/${staffId}/orders`, { 
+            headers: api.getHeaders() 
+        });
+        if (!response.ok) throw new Error('Failed to fetch orders');
+        return await response.json();
+    },
+
+    prepareOrder: async (staffId, orderId) => {
+        const response = await fetch(`${API_BASE}/staff/${staffId}/orders/${orderId}/prepare`, {
             method: 'PUT',
             headers: api.getHeaders()
         });
+        if (!response.ok) throw new Error('Failed to update status');
+        return await response.json();
+    },
+
+    markOrderReady: async (staffId, orderId) => {
+        const response = await fetch(`${API_BASE}/staff/${staffId}/orders/${orderId}/out-for-delivery`, {
+            method: 'PUT',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error('Failed to update status');
         return await response.json();
     }
 };
