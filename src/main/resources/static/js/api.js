@@ -89,6 +89,24 @@ const api = {
     // ============================
     // 3. SHOPPING CART
     // ============================
+    placeOrder: async (orderData) => {
+        try {
+            const response = await fetch(`${API_BASE}/orders/place`, {
+                method: 'POST',
+                headers: api.getHeaders(),
+                body: JSON.stringify(orderData)
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(errorText || 'Failed to place order');
+            }
+            return await response.json();
+        } catch (error) {
+            console.error('Place order error:', error);
+            throw error;
+        }
+    },
 
     getCartByUser: async (userId) => {
         try {
@@ -184,7 +202,15 @@ const api = {
         return await response.json();
     },
 
-    // --- Staff Specific Endpoints ---
+
+    getDriverProfile: async (id) => {
+        const response = await fetch(`${API_BASE}/delivery/${id}`, { 
+            headers: api.getHeaders() 
+        });
+        if (!response.ok) throw new Error('Failed to load profile');
+        return await response.json();
+    },
+
     
     getStaffProfile: async (staffId) => {
         const response = await fetch(`${API_BASE}/staff/${staffId}`, {

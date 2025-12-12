@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 @Entity
 @Table(name = "orders") 
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"}) // Prevents Lazy Loading crashes
 public class Order {
 
     @Id
@@ -17,45 +16,49 @@ public class Order {
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
-    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler"}) 
+    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler", "password"}) 
     private User customer;
 
     @ManyToOne
     @JoinColumn(name = "delivery_staff_id")
-    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler"}) 
+    @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler", "password"}) 
     private DeliveryStaff deliveryStaff;
 
-    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    // FIX: EAGER loading makes sure items are always sent to frontend
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<CartItem> items;
 
     private String paymentMethod = "CASH_ON_DELIVERY";
-
     private double totalPrice;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
 
     private LocalDateTime orderDate;
+    private String note; 
 
-    public Long getId() { return this.id; }
+    @PrePersist
+    protected void onCreate() {
+        if (this.orderDate == null) this.orderDate = LocalDateTime.now();
+        if (this.status == null) this.status = OrderStatus.PENDING;
+    }
+
+    // Getters & Setters
+    public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
-
-    public User getCustomer() { return this.customer; }
+    public User getCustomer() { return customer; }
     public void setCustomer(User customer) { this.customer = customer; }
-
     public DeliveryStaff getDeliveryStaff() { return deliveryStaff; }
     public void setDeliveryStaff(DeliveryStaff deliveryStaff) { this.deliveryStaff = deliveryStaff; }
-
-    public List<CartItem> getItems() { return this.items; }
+    public List<CartItem> getItems() { return items; }
     public void setItems(List<CartItem> items) { this.items = items; }
-
-    public double getTotalPrice() { return this.totalPrice; }
+    public double getTotalPrice() { return totalPrice; }
     public void setTotalPrice(double totalPrice) { this.totalPrice = totalPrice; }
-
-    public OrderStatus getStatus() { return this.status; }
+    public OrderStatus getStatus() { return status; }
     public void setStatus(OrderStatus status) { this.status = status; }
-
-    public LocalDateTime getOrderDate() { return this.orderDate; }
+    public LocalDateTime getOrderDate() { return orderDate; }
     public void setOrderDate(LocalDateTime orderDate) { this.orderDate = orderDate; }
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }

@@ -19,64 +19,67 @@ public class DeliveryStaffService {
 
     @Autowired
     private OrderRepository orderRepository;
+    
+    @Autowired
+    private OrderService orderService; // Needed to trigger assignment logic
 
-    // --- HELPER METHODS ---
     public DeliveryStaff getDeliveryStaffById(Long id) {
         return deliveryStaffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Delivery staff not found"));
     }
 
-    // --- DRIVER ACTIONS ---
-
-    // 1. View Orders Assigned to ME (Only the active one)
     public List<Order> viewAssignedOrders(Long deliveryStaffId) {
-        // Validation
         getDeliveryStaffById(deliveryStaffId);
-        // Fetch only OUT_FOR_DELIVERY orders assigned to this ID
         return orderRepository.findByDeliveryStaffIdAndStatus(deliveryStaffId, OrderStatus.OUT_FOR_DELIVERY);
     }
 
-    // 2. Mark Order as DELIVERED (Finish the job)
     @Transactional
     public Order completeDelivery(Long deliveryStaffId, Long orderId) {
-        // Get Staff
         DeliveryStaff driver = getDeliveryStaffById(deliveryStaffId);
-        
-        // Get Order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
-        // Security Check: Is this order actually assigned to this driver?
         if (order.getDeliveryStaff() == null || !order.getDeliveryStaff().getId().equals(deliveryStaffId)) {
-            throw new RuntimeException("Access Denied: This order is not assigned to you.");
+            throw new RuntimeException("Access Denied.");
         }
 
-        // Logic Check: Status
         if (order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
-            // A. Update Order Status
             order.setStatus(OrderStatus.DELIVERED);
             
-            // B. IMPORTANT: Make Driver Available Again!
+            // IMPORTANT: Driver is free again, so set TRUE
             driver.setAvailable(true);
-            
-            // C. Save Both
             deliveryStaffRepository.save(driver);
+            
+            // Check if there are more pending orders waiting for a driver
+            orderService.checkAndAssignWaitingOrders(driver);
+
             return orderRepository.save(order);
         } else {
             throw new RuntimeException("Order is not currently out for delivery.");
         }
     }
 
-    // 3. View My History (Delivered orders)
     public List<Order> getDeliveryHistory(Long deliveryStaffId) {
         getDeliveryStaffById(deliveryStaffId);
         return orderRepository.findByDeliveryStaffIdAndStatus(deliveryStaffId, OrderStatus.DELIVERED);
     }
     
-    // 4. Toggle Availability (Manual override if driver wants to take a break)
+    // FIXED TOGGLE LOGIC
+    @Transactional
     public DeliveryStaff toggleAvailability(Long id) {
         DeliveryStaff driver = getDeliveryStaffById(id);
-        driver.setAvailable(!driver.isAvailable());
-        return deliveryStaffRepository.save(driver);
+        
+        // Handle NULL safety
+        boolean current = driver.getIsAvailable() != null && driver.getIsAvailable();
+        driver.setAvailable(!current); // Toggle
+        
+        DeliveryStaff savedDriver = deliveryStaffRepository.save(driver);
+        
+        // IF they just went ONLINE, check for waiting orders
+        if (savedDriver.getIsAvailable()) {
+            orderService.checkAndAssignWaitingOrders(savedDriver);
+        }
+        
+        return savedDriver;
     }
 }

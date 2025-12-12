@@ -57,15 +57,21 @@ public class StaffService {
     // 5. Start Cooking (PENDING -> PREPARING)
     @Transactional
     public Order prepareOrder(Long staffId, Long orderId) {
-        getStaffById(staffId); // Validate staff exists
+        getStaffById(staffId); 
         
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // FIXED: Allow idempotent calls. If already preparing, just return it.
+        if (order.getStatus() == OrderStatus.PREPARING) {
+            return order;
+        }
 
         if (order.getStatus() == OrderStatus.PENDING) {
             order.setStatus(OrderStatus.PREPARING);
             return orderRepository.save(order);
         } else {
+            // Throw exception only if status is totally wrong (e.g. Delivered)
             throw new RuntimeException("Order cannot be prepared. Current status: " + order.getStatus());
         }
     }

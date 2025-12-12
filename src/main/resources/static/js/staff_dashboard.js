@@ -1,72 +1,43 @@
 /**
  * Staff Dashboard Controller
- * Dynamic Version with Mock Data Fallback
+ * CONNECTED TO BACKEND (Port 5005) + ANIMATIONS RESTORED
  */
+// Ensure API_BASE matches your api.js setting
+const STAFF_API_BASE = 'http://localhost:5005/api/staff'; 
+
 const StaffDashboard = {
     staffId: null,
     currentFilter: 'all',
     
-    // --- MOCK DATA (Fallback) ---
-    mockData: [
-        { 
-            id: 101, 
-            status: 'PENDING', 
-            orderDate: new Date().toISOString(), 
-            items: [{product: {name: 'Dbl Cheeseburger'}, quantity: 2}, {product: {name: 'Lg Fries'}, quantity: 1}], 
-            note: 'No pickles' 
-        },
-        { 
-            id: 102, 
-            status: 'PREPARING', 
-            orderDate: new Date(Date.now() - 1000 * 60 * 5).toISOString(), 
-            items: [{product: {name: 'Pepperoni Pizza'}, quantity: 1}, {product: {name: 'Coke Zero'}, quantity: 2}], 
-            note: '' 
-        },
-        { 
-            id: 104, 
-            status: 'PREPARED', 
-            orderDate: new Date(Date.now() - 1000 * 60 * 15).toISOString(), 
-            items: [{product: {name: 'Chicken Wings (12pc)'}, quantity: 1}], 
-            note: 'Extra spicy' 
-        }
-    ],
-
     init() {
         // 1. GET USER FROM SESSION
         const user = api.getUser();
         
         if (!user) {
-            console.warn("No user found in session. Redirecting to login.");
             window.location.href = 'auth.html';
             return;
         }
 
-        // 2. SET ID DYNAMICALLY
         this.staffId = user.id; 
 
-        // 3. SET NAME
-        this.updateHeaderName(user.name || user.username || "Staff");
-
-        // 4. FETCH FRESH PROFILE
+        // 2. LOAD PROFILE & ORDERS
+        this.updateHeaderName(user.name || user.username || "Chef");
         this.loadProfile();
-
-        // 5. FETCH ORDERS (Real or Mock)
         this.fetchOrders();
         
-        // 6. START POLLING
+        // 3. START POLLING
         setInterval(() => this.fetchOrders(), 10000);
         
         if(window.lucide) lucide.createIcons();
     },
 
-    // --- PROFILE MANAGEMENT ---
-
+    // --- PROFILE ---
     async loadProfile() {
         try {
             const staffProfile = await api.getStaffProfile(this.staffId);
             this.updateHeaderName(staffProfile.name || staffProfile.username);
         } catch (e) {
-            console.error("Profile fetch failed, using session name.");
+            console.error("Profile load failed");
         }
     },
 
@@ -78,102 +49,97 @@ const StaffDashboard = {
         }
     },
 
-    // --- ORDER MANAGEMENT ---
-
+    // --- ORDERS ---
     async fetchOrders() {
         try {
-            // TRY REAL API
             const orders = await api.getStaffOrders(this.staffId);
             this.renderBoard(orders);
         } catch (error) {
-            console.warn("API Failed. Using MOCK DATA.");
-            // FALLBACK TO MOCK DATA
-            this.renderBoard(this.mockData);
+            console.error("Orders fetch failed:", error);
         }
     },
 
-    async prepareOrder(orderId) {
-        // UI Animation
-        this.animateAction(orderId, 'ignite');
+    // --- ANIMATED ACTIONS ---
 
-        // Check if it's a mock ID (usually > 100 in our mock data, or handled via catch)
+    async prepareOrder(orderId) {
+        const card = document.getElementById(`ticket-${orderId}`);
+        const btn = document.getElementById(`btn-cook-${orderId}`);
+        
+        // 1. ANIMATION START
+        if(btn) {
+            btn.innerHTML = `<i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Igniting...`;
+            btn.className = "bg-orange-600 text-white py-2 rounded-lg font-bold text-sm transition w-full shadow-lg shadow-orange-500/50";
+            if(window.lucide) lucide.createIcons();
+        }
+
+        if(card) {
+            card.classList.add('animate-sizzle'); // CSS Class required
+            this.spawnSteam(card); // JS Particle Generator
+        }
+
+        // 2. DELAY FOR EFFECT, THEN CALL BACKEND
         setTimeout(async () => {
             try {
+                // Call API
                 await api.prepareOrder(this.staffId, orderId);
-                // Success: remove card and refresh
-                this.animateAction(orderId, 'remove');
-                setTimeout(() => this.fetchOrders(), 200);
-            } catch(e) {
-                // If API fails (e.g. using Mock Data), simulate success locally
-                console.warn("API Error. Simulating local update on mock data.");
-                const order = this.mockData.find(o => o.id === orderId);
-                if(order) {
-                     order.status = 'PREPARING';
-                     this.animateAction(orderId, 'remove');
-                     setTimeout(() => this.renderBoard(this.mockData), 200);
-                } else {
-                    alert("Failed to connect to backend.");
+                
+                // 3. ANIMATION END (Success)
+                if(card) {
+                    card.classList.remove('animate-sizzle');
+                    card.classList.add('animate-scale-out');
                 }
+                
+                // Refresh data after animation exits
+                setTimeout(() => this.fetchOrders(), 200);
+
+            } catch(e) {
+                alert("Failed to start cooking. Check connection.");
+                this.fetchOrders(); // Reset UI
             }
-        }, 1000);
+        }, 1200); // 1.2 second sizzle time
     },
 
     async markReady(orderId) {
-        this.animateAction(orderId, 'remove');
+        const card = document.getElementById(`ticket-${orderId}`);
+        if(card) card.classList.add('animate-scale-out');
         
         setTimeout(async () => {
             try {
                 await api.markOrderReady(this.staffId, orderId);
                 this.fetchOrders();
             } catch(e) {
-                console.warn("API Error. Simulating local update on mock data.");
-                const order = this.mockData.find(o => o.id === orderId);
-                if(order) {
-                    order.status = 'PREPARED';
-                    this.renderBoard(this.mockData);
-                }
+                alert("Failed to update status.");
+                this.fetchOrders();
             }
         }, 200);
     },
 
-    logout() {
-        if(confirm("Are you sure you want to log out?")) {
-            api.clearUser();
-            window.location.href = 'auth.html';
-        }
-    },
-
-    // --- ANIMATIONS ---
-    animateAction(orderId, type) {
-        const card = document.getElementById(`ticket-${orderId}`);
-        const btn = document.getElementById(`btn-cook-${orderId}`);
-
-        if (type === 'ignite' && btn && card) {
-             btn.innerHTML = `<i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Igniting...`;
-             btn.className = "bg-orange-600 text-white py-2 rounded-lg font-bold text-sm transition w-full shadow-lg shadow-orange-500/50";
-             if(window.lucide) lucide.createIcons();
-             
-             card.classList.add('animate-sizzle');
-             this.spawnSteam(card);
-        } else if (type === 'remove' && card) {
-            card.classList.remove('animate-sizzle');
-            card.classList.add('animate-scale-out');
-        }
-    },
-
+    // --- PARTICLE GENERATOR (THE "STEAM") ---
     spawnSteam(card) {
         for (let i = 0; i < 6; i++) {
             setTimeout(() => {
                 const steam = document.createElement('div');
-                steam.className = 'steam-particle';
+                steam.className = 'steam-particle'; // Requires CSS
+                
+                // Randomize size and position
                 const size = Math.random() * 10 + 10;
                 steam.style.width = `${size}px`;
                 steam.style.height = `${size}px`;
                 steam.style.left = `${Math.random() * 80 + 10}%`;
                 steam.style.top = '60%'; 
+                
                 card.appendChild(steam);
+                
+                // Cleanup
                 setTimeout(() => steam.remove(), 1000);
             }, i * 150);
+        }
+    },
+
+    logout() {
+        if(confirm("Log out?")) {
+            api.clearUser();
+            window.location.href = 'auth.html';
         }
     },
 
@@ -185,9 +151,6 @@ const StaffDashboard = {
             if (id === filter) btn.className = "px-4 py-2 rounded-lg text-sm font-bold bg-gray-900 text-white transition-colors shadow-md transform scale-105";
             else btn.className = "px-4 py-2 rounded-lg text-sm font-bold bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 transition-colors";
         });
-        
-        // Re-run render logic. If we were using mock data, this uses mock data.
-        // If we were using API, it triggers a fetch.
         this.fetchOrders();
     },
 
@@ -201,7 +164,7 @@ const StaffDashboard = {
         if(!cols.pending) return;
         Object.values(cols).forEach(el => el.innerHTML = '');
 
-        let counts = { pending: 0, preparing: 0, ready: 0 };
+        const counts = { pending: 0, preparing: 0, ready: 0 };
 
         if(Array.isArray(orders)) {
             orders.forEach(order => {
@@ -224,19 +187,18 @@ const StaffDashboard = {
             });
         }
 
-        const countPending = document.getElementById('count-pending');
-        const countPreparing = document.getElementById('count-preparing');
-        const countReady = document.getElementById('count-ready');
-
-        if(countPending) countPending.innerText = counts.pending;
-        if(countPreparing) countPreparing.innerText = counts.preparing;
-        if(countReady) countReady.innerText = counts.ready;
+        const cp = document.getElementById('count-pending');
+        const cpr = document.getElementById('count-preparing');
+        const cr = document.getElementById('count-ready');
+        if(cp) cp.innerText = counts.pending;
+        if(cpr) cpr.innerText = counts.preparing;
+        if(cr) cr.innerText = counts.ready;
         
         if(window.lucide) lucide.createIcons();
     },
 
     createTicket(order) {
-        // TIME FORMATTING
+        // Handle Date Display
         let timeDisplay = '--:--';
         if(order.orderDate) {
             if(Array.isArray(order.orderDate)) {
@@ -257,17 +219,30 @@ const StaffDashboard = {
         let borderClass = statusLower === 'pending' ? 'status-border-pending' : 
                           statusLower === 'preparing' ? 'status-border-preparing' : 'status-border-ready';
 
-        // ACTIONS
         let actionsHtml = '';
         if (statusLower === 'pending') {
-            actionsHtml = `<div class="mt-4"><button id="btn-cook-${order.id}" onclick="StaffDashboard.prepareOrder(${order.id})" class="w-full bg-gray-900 text-white py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition shadow-lg shadow-gray-200">Start Cook</button></div>`;
+            actionsHtml = `
+                <div class="mt-4">
+                    <button id="btn-cook-${order.id}" onclick="StaffDashboard.prepareOrder(${order.id})" class="w-full bg-gray-900 text-white py-2 rounded-lg font-bold text-sm hover:bg-gray-800 transition shadow-lg shadow-gray-200 transform active:scale-95">Start Cook</button>
+                </div>`;
         } else if (statusLower === 'preparing') {
-            actionsHtml = `<div class="mt-4"><button onclick="StaffDashboard.markReady(${order.id})" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex justify-center items-center gap-2"><i data-lucide="check" class="w-4 h-4"></i> Ready for Driver</button></div>`;
+            actionsHtml = `
+                <div class="mt-4">
+                    <button onclick="StaffDashboard.markReady(${order.id})" class="w-full bg-blue-600 text-white py-2 rounded-lg font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex justify-center items-center gap-2 transform active:scale-95">
+                        <i data-lucide="check" class="w-4 h-4"></i> Ready for Driver
+                    </button>
+                </div>`;
         } else {
-            actionsHtml = `<div class="mt-4 text-center"><span class="text-green-600 font-bold text-sm flex items-center justify-center gap-1"><i data-lucide="check-circle" class="w-4 h-4"></i> Assigned to Driver</span></div>`;
+            actionsHtml = `
+                <div class="mt-4 text-center">
+                    <span class="text-green-600 font-bold text-sm flex items-center justify-center gap-1">
+                        <i data-lucide="check-circle" class="w-4 h-4"></i> Assigned to Driver
+                    </span>
+                </div>`;
         }
 
         div.id = `ticket-${order.id}`;
+        // Important: 'relative overflow-hidden' keeps the steam inside or relative to the card
         div.className = `bg-white p-4 rounded-xl shadow-sm border border-gray-100 animate-slide-up ${borderClass} mb-4 last:mb-0 relative overflow-hidden`;
         
         const itemsHtml = (order.items || []).map(item => `
@@ -287,7 +262,9 @@ const StaffDashboard = {
                         <i data-lucide="clock" class="w-3 h-3"></i> ${timeDisplay}
                     </div>
                 </div>
+                ${order.note ? `<div class="bg-red-50 text-red-600 p-1.5 rounded-lg" title="Note"><i data-lucide="alert-circle" class="w-4 h-4"></i></div>` : ''}
             </div>
+
             <div class="space-y-2 mb-4 border-t border-b border-gray-50 py-3 relative z-10">${itemsHtml}</div>
             ${order.note ? `<div class="bg-yellow-50 border border-yellow-100 p-3 rounded-lg text-sm text-yellow-800 mb-3 relative z-10"><span class="font-bold">Note:</span> ${order.note}</div>` : ''}
             <div class="relative z-10">${actionsHtml}</div>

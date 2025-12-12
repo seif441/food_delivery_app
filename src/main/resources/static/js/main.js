@@ -177,9 +177,6 @@ async function addToCart(productId, qty = 1) {
         state.cartItems = updatedCart.items;
         updateCartUI();
         
-        // 5. Open Drawer
-        openCartDrawer();
-        
     } catch (e) {
         alert('Failed to add item. Please try again.');
         console.error(e);
@@ -271,27 +268,71 @@ function closeCartDrawer() {
 }
 
 async function handleCheckout() {
+    // 1. Validation
     if (!state.user) return window.location.href = 'auth.html';
     if (state.cartItems.length === 0) return alert("Your basket is empty!");
 
-    // Close drawer & Show Success
-    closeCartDrawer();
-    const overlay = document.getElementById('success-overlay');
-    overlay.classList.remove('hidden');
-    
-    // Simulate Processing
-    setTimeout(async () => {
-        // Clear Cart in Backend
-        if(state.cartId) await api.clearCart(state.cartId);
+    const checkoutBtn = document.getElementById('checkout-btn');
+    if(checkoutBtn) {
+        checkoutBtn.disabled = true;
+        checkoutBtn.textContent = "Processing...";
+    }
+
+    try {
+        // 2. Prepare Data for Backend
+        // We calculate total locally, but backend should re-verify
+        const subtotal = state.cartItems.reduce((sum, item) => sum + item.price, 0);
+        const deliveryFee = 2.99;
         
-        // Reset Local State
+        const orderPayload = {
+            customer: { id: state.user.id }, // Java needs User object with ID
+            totalPrice: subtotal + deliveryFee,
+            status: "PENDING",
+            paymentMethod: "CASH_ON_DELIVERY",
+            // Map cart items to the structure Order expects
+            items: state.cartItems.map(item => ({
+                product: { id: item.product.id, price: item.product.price }, 
+                quantity: item.quantity,
+                price: item.price // This is total price for this line item
+            }))
+        };
+
+        // 3. Send to Backend
+        console.log("Sending Order:", orderPayload); // Debugging
+        const createdOrder = await api.placeOrder(orderPayload);
+        console.log("Order Created:", createdOrder);
+
+        // 4. Clear Cart (Now it's safe to delete cart items)
+        if (state.cartId) {
+            await api.clearCart(state.cartId);
+        }
+
+        // 5. Success UI
+        closeCartDrawer();
+        const overlay = document.getElementById('success-overlay');
+        // If you don't have an overlay element in HTML, just alert
+        if(overlay) {
+            overlay.classList.remove('hidden');
+        } else {
+            alert("Order Placed Successfully!");
+        }
+
+        // 6. Reset State and Redirect
         state.cartItems = [];
         updateCartUI();
-        
-        // Hide Overlay and Redirect
-        overlay.classList.add('hidden');
-        window.location.href = 'orders.html'; 
-    }, 2500);
+
+        setTimeout(() => {
+            window.location.href = 'orders.html';
+        }, 1500);
+
+    } catch (e) {
+        console.error("Checkout Failed:", e);
+        alert("Failed to place order: " + e.message);
+        if(checkoutBtn) {
+            checkoutBtn.disabled = false;
+            checkoutBtn.textContent = "Checkout";
+        }
+    }
 }
 
 // ==========================================

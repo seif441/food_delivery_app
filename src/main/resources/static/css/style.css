@@ -40,3 +40,28 @@ body {
     font-family: 'Inter', sans-serif;
     -webkit-tap-highlight-color: transparent;
 }
+/* 1. Sizzle Pulse */
+.animate-sizzle {
+    animation: sizzleGlow 0.8s ease-in-out infinite alternate;
+    border-color: #f97316 !important; 
+}
+@keyframes sizzleGlow {
+    from { box-shadow: 0 0 5px rgba(249, 115, 22, 0.2); }
+    to { box-shadow: 0 0 20px rgba(249, 115, 22, 0.6); transform: scale(1.02); }
+}
+
+/* 2. Steam Particles */
+.steam-particle {
+    position: absolute;
+    background: rgba(156, 163, 175, 0.4);
+    border-radius: 50%;
+    filter: blur(2px);
+    pointer-events: none;
+    z-index: 50;
+    animation: rise 1s ease-out forwards;
+}
+@keyframes rise {
+    0% { transform: translateY(0) scale(0.5); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(-40px) scale(2); opacity: 0; }
+}

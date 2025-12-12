@@ -1,7 +1,7 @@
 const OrderManager = {
     currentTab: 'active',
     orders: [],
-    API_BASE_URL: '/api/orders', 
+    API_BASE_URL: 'http://localhost:5005/api/orders', 
 
     init() {
         if (window.lucide) lucide.createIcons();
@@ -14,46 +14,21 @@ const OrderManager = {
         if (userId) {
             this.fetchOrders(userId);
         } else {
-            this.showLoginPrompt();
+            console.warn("No logged-in user found.");
         }
     },
 
-    // --- SMART ID FETCHING ---
     async getUserId() {
-        // 1. Check URL parameter (e.g. orders.html?id=2)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('id')) {
-            console.log("Using ID from URL:", urlParams.get('id'));
-            return urlParams.get('id');
-        }
-
-        // 2. Check LocalStorage (Standard Login)
-        const storedId = localStorage.getItem('userId');
-        if (storedId) {
-            console.log("Using ID from LocalStorage:", storedId);
-            return storedId;
-        }
-
-        // 3. AUTO-DETECT FROM DATABASE (Requested Feature)
-        // This fetches all orders, picks the first customer found, and uses their ID.
-        console.log("No ID found. Auto-detecting a user from database...");
-        try {
-            const response = await fetch(`${this.API_BASE_URL}/all`); // Admin endpoint
-            if (response.ok) {
-                const allOrders = await response.json();
-                if (allOrders.length > 0 && allOrders[0].customer) {
-                    const foundId = allOrders[0].customer.id;
-                    console.log(`Auto-detected Customer ID: ${foundId}`);
-                    // Save it so we don't have to search next time
-                    localStorage.setItem('userId', foundId); 
-                    return foundId;
-                }
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                return user.id || user.userId;
+            } catch (e) {
+                console.error("Session Error:", e);
             }
-        } catch (e) {
-            console.warn("Could not auto-detect user:", e);
         }
-
-        return null; // Could not find anyone
+        return null;
     },
 
     async fetchOrders(userId) {
@@ -66,73 +41,46 @@ const OrderManager = {
         if (errorState) errorState.classList.add('hidden');
 
         try {
-            console.log(`Fetching orders for User ${userId}...`);
             const response = await fetch(`${this.API_BASE_URL}/customer/${userId}`);
             
-            if (!response.ok) {
-                throw new Error(`Server Error (${response.status})`);
-            }
+            if (!response.ok) throw new Error(`Server Error (${response.status})`);
             
             this.orders = await response.json();
             
             // Sort: Newest first
             this.orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
 
+            // Render current tab
             this.renderOrders(this.currentTab);
 
         } catch (error) {
             console.error("Error loading orders:", error);
             if (loading) loading.classList.add('hidden');
-            if (errorState) {
-                errorState.classList.remove('hidden');
-                document.getElementById('error-message').innerHTML = `
-                    <strong class="text-red-600">Connection Error</strong><br>
-                    ${error.message}<br>
-                    <span class="text-xs text-gray-500">Check your backend console.</span>
-                `;
-            }
+            if (errorState) errorState.classList.remove('hidden');
         } finally {
             if (loading) loading.classList.add('hidden');
         }
     },
 
-    showLoginPrompt() {
-        const list = document.getElementById('orders-list');
-        const loading = document.getElementById('loading-state');
-        if (loading) loading.classList.add('hidden');
-        
-        if (list) {
-            list.innerHTML = `
-                <div class="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
-                    <div class="bg-gray-100 p-6 rounded-full mb-4">
-                        <i data-lucide="user-x" class="w-10 h-10 text-gray-400"></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-900">No Orders Found</h3>
-                    <p class="text-gray-500 text-sm mt-1 mb-6">We couldn't find any users in the database.</p>
-                    <div class="bg-yellow-50 p-4 rounded-xl text-xs text-left text-yellow-800 max-w-xs mx-auto mb-4 border border-yellow-100">
-                        <strong>Tip:</strong> Run the SQL script to create orders. <br>
-                        Once orders exist, this page will automatically find the user ID.
-                    </div>
-                </div>
-            `;
-            if (window.lucide) lucide.createIcons();
-        }
-    },
-
-    // --- HELPERS ---
-
+    // --- 3. RENDER UI ---
     renderOrders(tab) {
         const list = document.getElementById('orders-list');
         if (!list) return;
 
         list.innerHTML = ''; 
 
-        // Active = Pending, Prepared, Out For Delivery
-        const activeStatuses = ['PENDING', 'PREPARED', 'OUT_FOR_DELIVERY'];
-        
+        // Define what constitutes "Active" vs "Past"
+        const activeStatuses = ['PENDING', 'PREPARED', 'PREPARING', 'OUT_FOR_DELIVERY'];
+        // Explicitly define Past statuses to be safe
+        const pastStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
+
         const filteredOrders = this.orders.filter(o => {
-            if (tab === 'active') return activeStatuses.includes(o.status);
-            return !activeStatuses.includes(o.status); // Past = Delivered, Cancelled
+            if (tab === 'active') {
+                return activeStatuses.includes(o.status);
+            } else {
+                // If it's in past statuses OR simply not in active statuses
+                return pastStatuses.includes(o.status) || !activeStatuses.includes(o.status);
+            }
         });
 
         if (filteredOrders.length === 0) {
@@ -141,64 +89,59 @@ const OrderManager = {
                     <div class="bg-gray-100 p-6 rounded-full mb-4">
                         <i data-lucide="shopping-bag" class="w-10 h-10 text-gray-400"></i>
                     </div>
-                    <h3 class="text-lg font-bold text-gray-900">No ${tab} orders</h3>
-                    <p class="text-gray-500 text-sm mt-1 mb-6">No orders in this category.</p>
-                    <button onclick="window.location.href='index.html'" class="bg-orange-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-orange-700 transition shadow-lg shadow-orange-200">
-                        Browse Menu
-                    </button>
+                    <h3 class="text-lg font-bold text-gray-900">No ${tab} orders found</h3>
+                    ${tab === 'active' ? 
+                        `<button onclick="window.location.href='index.html'" class="mt-4 bg-orange-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-orange-700 transition shadow-lg shadow-orange-200">
+                            Browse Menu
+                        </button>` : ''
+                    }
                 </div>
             `;
             if (window.lucide) lucide.createIcons();
             return;
         }
 
-        filteredOrders.forEach((order, index) => {
-            const delay = index * 50; 
+        filteredOrders.forEach((order) => {
             const items = order.items || [];
-            
-            // Format Items text
-            const itemNames = items.map(i => {
-                const name = i.product ? i.product.name : 'Unknown Item';
-                return `${name} (x${i.quantity})`;
-            }).join(', ');
-
             const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+            
+            // Format item names
+            const itemNames = items.length > 0 
+                ? items.map(i => `${i.product ? i.product.name : 'Item'} (x${i.quantity})`).join(', ')
+                : "No items details available";
 
-            // Image handling
-            const firstImage = (items[0] && items[0].product && items[0].product.imageUrl) 
-                ? items[0].product.imageUrl 
-                : 'https://placehold.co/100?text=Food'; 
-
+            const canTrack = activeStatuses.includes(order.status);
             const canCancel = order.status === 'PENDING';
-            const canTrack = ['PREPARED', 'OUT_FOR_DELIVERY'].includes(order.status);
+            const isCompleted = order.status === 'DELIVERED';
 
             const card = document.createElement('div');
-            card.className = `bg-white p-5 rounded-2xl border border-gray-100 shadow-sm animate-fade-in hover:shadow-md transition-shadow duration-300`;
-            card.style.animationDelay = `${delay}ms`;
+            card.className = `bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4 animate-fade-in`;
+
+            // Dynamic Status Color
+            let statusColor = "bg-gray-100 text-gray-600";
+            if(order.status === 'DELIVERED') statusColor = "bg-green-100 text-green-700 border-green-200";
+            if(order.status === 'CANCELLED') statusColor = "bg-red-50 text-red-600 border-red-100";
+            if(order.status === 'OUT_FOR_DELIVERY') statusColor = "bg-orange-100 text-orange-700 border-orange-200";
 
             card.innerHTML = `
                 <div class="flex justify-between items-start mb-4">
-                    <div class="flex gap-4">
-                        <img src="${firstImage}" class="w-12 h-12 rounded-xl object-cover border border-gray-100" onerror="this.src='https://placehold.co/100?text=Food'">
-                        <div>
-                            <h3 class="font-bold text-gray-900">Order #${order.id}</h3>
-                            <p class="text-xs text-gray-500 mt-1">${this.formatDate(order.orderDate)}</p>
-                        </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900">Order #${order.id}</h3>
+                        <p class="text-xs text-gray-500 mt-1">${this.formatDate(order.orderDate)}</p>
                     </div>
-                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${this.getStatusStyles(order.status)}">
-                        <i data-lucide="${this.getStatusIcon(order.status)}" class="w-3 h-3"></i>
-                        ${this.getStatusLabel(order.status)}
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold border ${statusColor}">
+                        ${order.status.replace(/_/g, ' ')}
                     </span>
                 </div>
                 
-                <div class="border-t border-b border-gray-50 py-3 my-3">
+                <div class="py-3 my-3 border-t border-b border-gray-50">
                     <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">
                         <span class="font-medium text-gray-900">${itemCount} items:</span> ${itemNames}
                     </p>
                 </div>
 
                 <div class="flex items-center justify-between mt-2">
-                    <span class="font-extrabold text-gray-900">$${order.totalPrice.toFixed(2)}</span>
+                    <span class="font-extrabold text-gray-900">$${(order.totalPrice || 0).toFixed(2)}</span>
                     <div class="flex gap-2">
                          ${canCancel ? `
                             <button onclick="OrderManager.cancelOrder(${order.id})" class="px-4 py-2 bg-red-50 text-red-600 text-sm font-bold rounded-lg hover:bg-red-100 transition">
@@ -206,9 +149,14 @@ const OrderManager = {
                             </button>
                         ` : ''}
                          ${canTrack ? `
-                            <button class="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-lg hover:bg-orange-700 transition flex items-center gap-2 shadow-lg shadow-orange-100">
+                            <button onclick="window.location.href='track.html?id=${order.id}'" class="px-4 py-2 bg-orange-600 text-white text-sm font-bold rounded-lg hover:bg-orange-700 transition flex items-center gap-2 shadow-lg shadow-orange-100">
                                 Track Order
                             </button>
+                        ` : ''}
+                        ${isCompleted ? `
+                             <span class="text-sm font-bold text-green-600 flex items-center gap-1">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i> Completed
+                             </span>
                         ` : ''}
                     </div>
                 </div>
@@ -219,50 +167,105 @@ const OrderManager = {
         if (window.lucide) lucide.createIcons();
     },
 
-    getStatusStyles(status) {
-        const styles = {
-            'PENDING': 'bg-blue-50 text-blue-600 ring-blue-500/20',
-            'PREPARED': 'bg-yellow-50 text-yellow-600 ring-yellow-500/20',
-            'OUT_FOR_DELIVERY': 'bg-orange-50 text-orange-600 ring-orange-500/20',
-            'DELIVERED': 'bg-gray-100 text-gray-600 ring-gray-500/20',
-            'CANCELLED': 'bg-red-50 text-red-600 ring-red-500/20'
-        };
-        return styles[status] || 'bg-gray-100 text-gray-600';
+    formatDate(dateVal) {
+        if (!dateVal) return '';
+        // Handle Java LocalDateTime Array [2025, 12, 12, 10, 30]
+        if (Array.isArray(dateVal)) {
+            const time = `${dateVal[3].toString().padStart(2,'0')}:${dateVal[4].toString().padStart(2,'0')}`;
+            return `${dateVal[2]}/${dateVal[1]}/${dateVal[0]} ${time}`;
+        }
+        return new Date(dateVal).toLocaleDateString();
+    },
+    // --- ANIMATION & ACTION ---
+
+    async prepareOrder(orderId) {
+        const card = document.getElementById(`ticket-${orderId}`);
+        const btn = document.getElementById(`btn-cook-${orderId}`);
+        
+        // 1. Button Feedback
+        if(btn) {
+            btn.innerHTML = `<i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Igniting...`;
+            btn.className = "bg-orange-600 text-white py-2 rounded-lg font-bold text-sm transition w-full shadow-lg shadow-orange-500/50";
+            if(window.lucide) lucide.createIcons();
+        }
+
+        // 2. RESTORED: Sizzle & Steam Animation
+        if(card) {
+            card.classList.add('animate-sizzle'); // Makes the card glow orange
+            this.spawnSteam(card);                // Spawns the steam particles
+        }
+
+        // 3. Delay API call slightly to let the animation play
+        setTimeout(async () => {
+            try {
+                await api.prepareOrder(this.staffId, orderId);
+                
+                // Success: Animate card away
+                if(card) {
+                    card.classList.remove('animate-sizzle');
+                    card.classList.add('animate-scale-out');
+                }
+                
+                // Refresh list after animation finishes
+                setTimeout(() => this.fetchOrders(), 200);
+            } catch(e) {
+                alert("Failed to start cooking.");
+                this.fetchOrders(); 
+            }
+        }, 1000); // 1 second delay for the visual effect
     },
 
-    getStatusLabel(status) {
-        const labels = { 'PENDING': 'Order Placed', 'PREPARED': 'Preparing', 'OUT_FOR_DELIVERY': 'On the way', 'DELIVERED': 'Delivered', 'CANCELLED': 'Cancelled' };
-        return labels[status] || status;
+    // --- HELPER: Spawns Steam Particles ---
+    spawnSteam(card) {
+        // Create 6 puff clouds
+        for (let i = 0; i < 6; i++) {
+            setTimeout(() => {
+                const steam = document.createElement('div');
+                steam.className = 'steam-particle';
+                
+                // Randomize size and position
+                const size = Math.random() * 10 + 10;
+                steam.style.width = `${size}px`;
+                steam.style.height = `${size}px`;
+                steam.style.left = `${Math.random() * 80 + 10}%`; // Random horizontal pos
+                steam.style.top = '60%'; 
+                
+                card.appendChild(steam);
+                
+                // Remove particle after animation triggers
+                setTimeout(() => steam.remove(), 1000);
+            }, i * 150); // Stagger them
+        }
     },
-
-    getStatusIcon(status) {
-        const icons = { 'PENDING': 'clock', 'PREPARED': 'chef-hat', 'OUT_FOR_DELIVERY': 'bike', 'DELIVERED': 'check-circle-2', 'CANCELLED': 'x-circle' };
-        return icons[status] || 'info';
-    },
-
-    formatDate(dateString) {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' }).format(date);
-    },
-    
-    // --- ACTIONS ---
-    
+    // --- 4. FIX: TAB SWITCHING ---
     switchTab(tab) {
         this.currentTab = tab;
-        const activeBtn = document.getElementById('tab-active');
-        const pastBtn = document.getElementById('tab-past');
-        const indicator = document.getElementById('tab-indicator');
+        
+        // 1. Update Text Colors
+        const btnActive = document.getElementById('tab-active');
+        const btnPast = document.getElementById('tab-past');
         
         if (tab === 'active') {
-            indicator.style.transform = 'translateX(0)';
-            activeBtn.classList.replace('text-gray-500', 'text-gray-900');
-            pastBtn.classList.replace('text-gray-900', 'text-gray-500');
+            btnActive.classList.replace('text-gray-500', 'text-gray-900');
+            btnPast.classList.replace('text-gray-900', 'text-gray-500');
         } else {
-            indicator.style.transform = 'translateX(100%) translateX(8px)';
-            pastBtn.classList.replace('text-gray-500', 'text-gray-900');
-            activeBtn.classList.replace('text-gray-900', 'text-gray-500');
+            btnPast.classList.replace('text-gray-500', 'text-gray-900');
+            btnActive.classList.replace('text-gray-900', 'text-gray-500');
         }
+
+        // 2. FIX: Animate the White Background Slider
+        const indicator = document.getElementById('tab-indicator');
+        if (indicator) {
+            if (tab === 'active') {
+                indicator.style.transform = 'translateX(0)';
+            } else {
+                // Move it 100% to the right (plus a tiny gap adjustment if needed)
+                indicator.style.transform = 'translateX(100%)'; 
+                // Or slightly more precise: calc(100% + 4px) depending on your HTML gap
+            }
+        }
+
+        // 3. Re-render list
         this.renderOrders(tab);
     },
 
@@ -270,11 +273,14 @@ const OrderManager = {
         if(!confirm("Cancel this order?")) return;
         try {
             const response = await fetch(`${this.API_BASE_URL}/${orderId}`, { method: 'DELETE' });
-            if (response.ok) this.start();
-            else alert("Could not cancel order.");
+            if (response.ok) {
+                // Refresh list
+                this.start(); 
+            } else {
+                alert("Could not cancel order.");
+            }
         } catch (e) {
-            console.error(e);
-            alert("Error connecting to server");
+            alert("Connection error");
         }
     }
 };

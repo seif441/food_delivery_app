@@ -1,35 +1,18 @@
 /**
  * Delivery Dashboard Controller
- * Supports Dashboard View and Full History View
+ * CONNECTED TO REAL DATABASE - NO MOCK DATA
  */
 const DeliveryDashboard = {
     driverId: null,
-    isAvailable: true,
+    isAvailable: false, // Default to false (safe state) until loaded
     currentView: 'dashboard',
+    
+    // CONSTANT: Driver only gets this amount per order
+    DELIVERY_FEE: 2.99, 
     
     // --- LOCAL STATS ---
     todayEarnings: 0.00,
     todayCount: 0,
-
-    // --- MOCK DATA ---
-    mockActive: [
-        {
-            id: 205,
-            status: 'OUT_FOR_DELIVERY',
-            totalPrice: 45.50,
-            customer: { name: "Emily Johnson", address: "404 Innovation Dr, Tech Park", phoneNumber: "555-0199" },
-            items: [{ product: {name: "Family Sushi Set"}, quantity: 1 }, { product: {name: "Miso Soup"}, quantity: 4 }],
-            orderDate: new Date().toISOString()
-        }
-    ],
-    mockHistory: [
-        { id: 201, status: 'DELIVERED', totalPrice: 22.00, orderDate: new Date(Date.now() - 86400000).toISOString() },
-        { id: 198, status: 'DELIVERED', totalPrice: 15.75, orderDate: new Date(Date.now() - 172800000).toISOString() },
-        { id: 185, status: 'DELIVERED', totalPrice: 34.20, orderDate: new Date(Date.now() - 250000000).toISOString() },
-        { id: 172, status: 'DELIVERED', totalPrice: 12.50, orderDate: new Date(Date.now() - 300000000).toISOString() },
-        { id: 166, status: 'DELIVERED', totalPrice: 50.00, orderDate: new Date(Date.now() - 400000000).toISOString() },
-        { id: 150, status: 'DELIVERED', totalPrice: 19.99, orderDate: new Date(Date.now() - 500000000).toISOString() }
-    ],
 
     init() {
         const user = api.getUser();
@@ -42,18 +25,34 @@ const DeliveryDashboard = {
         const nameEl = document.getElementById('sidebar-name');
         if(nameEl) nameEl.innerText = user.name || user.username || "Driver";
 
-        // Stats Init
-        this.todayCount = this.mockHistory.length;
-        this.todayEarnings = this.todayCount * 2.99;
-
-        // Start
+        // 1. Initial Load of Orders
         this.loadActiveOrders();
         this.loadHistory();
-        this.updateStatsUI();
         
-        setInterval(() => this.loadActiveOrders(), 15000);
+        // 2. NEW: Sync Availability Status from Server
+        this.syncStatus();
+
+        // 3. Polling every 15s
+        setInterval(() => {
+            this.loadActiveOrders();
+            // Optional: Keep status synced in case Admin changes it
+            // this.syncStatus(); 
+        }, 15000);
 
         if(window.lucide) lucide.createIcons();
+    },
+
+    // --- NEW FUNCTION: Sync Status ---
+    async syncStatus() {
+        try {
+            const driver = await api.getDriverProfile(this.driverId);
+            // Update local state to match database
+            this.isAvailable = driver.isAvailable; 
+            // Update UI to match
+            this.updateStatusUI(this.isAvailable);
+        } catch (e) {
+            console.error("Failed to sync status:", e);
+        }
     },
 
     // --- VIEW SWITCHING ---
@@ -71,7 +70,6 @@ const DeliveryDashboard = {
             dashView.classList.remove('hidden');
             histView.classList.add('hidden');
             
-            // Sidebar Styles
             if(btnDash) {
                 btnDash.className = "w-full flex items-center gap-3 px-4 py-3 bg-orange-50 text-orange-700 rounded-xl font-bold transition-all";
                 btnHist.className = "w-full flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-semibold transition-all";
@@ -81,12 +79,11 @@ const DeliveryDashboard = {
                 headerDesc.innerText = "Manage your deliveries and earnings";
             }
             
-            this.loadActiveOrders(); // Refresh dashboard data
+            this.loadActiveOrders(); 
         } else {
             dashView.classList.add('hidden');
             histView.classList.remove('hidden');
             
-            // Sidebar Styles
             if(btnHist) {
                 btnHist.className = "w-full flex items-center gap-3 px-4 py-3 bg-orange-50 text-orange-700 rounded-xl font-bold transition-all";
                 btnDash.className = "w-full flex items-center gap-3 px-4 py-3 text-gray-500 hover:bg-gray-50 hover:text-gray-900 rounded-xl font-semibold transition-all";
@@ -96,47 +93,72 @@ const DeliveryDashboard = {
                 headerDesc.innerText = "View all your past deliveries";
             }
 
-            this.loadHistory(); // Refresh history data
+            this.loadHistory(); 
         }
     },
 
     // --- API WRAPPERS ---
     async getActive() {
         try {
-            const res = await fetch(`/api/delivery/${this.driverId}/active-orders`, { headers: api.getHeaders() });
-            if(!res.ok) throw new Error();
+            const res = await fetch(`${API_BASE}/delivery/${this.driverId}/active-orders`, { headers: api.getHeaders() });
+            if(!res.ok) throw new Error("Failed to fetch active orders");
             return await res.json();
-        } catch(e) { return this.mockActive; }
+        } catch(e) { 
+            console.error(e);
+            return [];
+        }
     },
 
     async getHistory() {
         try {
-            const res = await fetch(`/api/delivery/${this.driverId}/history`, { headers: api.getHeaders() });
-            if(!res.ok) throw new Error();
+            const res = await fetch(`${API_BASE}/delivery/${this.driverId}/history`, { headers: api.getHeaders() });
+            if(!res.ok) throw new Error("Failed to fetch history");
             return await res.json();
-        } catch(e) { return this.mockHistory; }
+        } catch(e) { 
+            console.error(e);
+            return []; 
+        }
     },
 
     async sendComplete(orderId) {
         try {
-            const res = await fetch(`/api/delivery/${this.driverId}/complete/${orderId}`, {
+            const res = await fetch(`${API_BASE}/delivery/${this.driverId}/complete/${orderId}`, {
                 method: 'PUT',
                 headers: api.getHeaders()
             });
-            if(!res.ok) throw new Error();
+            if(!res.ok) throw new Error("Failed to complete order");
             return true;
         } catch(e) {
-            // Mock Logic
-            const order = this.mockActive.find(o => o.id === orderId);
-            if (order) {
-                this.mockActive = [];
-                order.status = 'DELIVERED';
-                order.orderDate = new Date().toISOString();
-                this.mockHistory.unshift(order);
-                this.todayEarnings += 2.99;
-                this.todayCount += 1;
+            console.error(e);
+            alert("Error: Could not complete order. Please check your connection.");
+            return false;
+        }
+    },
+
+    async toggleAvailability() {
+        // 1. Optimistic UI Update (Change color immediately)
+        this.isAvailable = !this.isAvailable;
+        this.updateStatusUI(this.isAvailable);
+
+        try {
+            // 2. TELL THE SERVER YOU ARE AVAILABLE
+            const res = await fetch(`${API_BASE}/delivery/${this.driverId}/toggle-availability`, { 
+                method: 'PUT', 
+                headers: api.getHeaders() 
+            });
+            
+            if(res.ok) {
+                // 3. If server says OK, check for new orders immediately
+                setTimeout(() => this.loadActiveOrders(), 500); 
+            } else {
+                throw new Error("Failed to toggle");
             }
-            return true; 
+        } catch(e) {
+            console.error("Toggle error:", e);
+            // Revert UI if failed
+            this.isAvailable = !this.isAvailable;
+            this.updateStatusUI(this.isAvailable);
+            alert("Could not update availability. Check connection.");
         }
     },
 
@@ -148,18 +170,27 @@ const DeliveryDashboard = {
 
     async loadHistory() {
         const history = await this.getHistory();
-        
-        // Render Recent Widget (Dashboard View)
         this.renderRecentHistory(history);
-        
-        // Render Full List (History View)
         this.renderFullHistory(history);
-        
-        // Update Stats
+        this.calcStats(history);
         this.updateStatsUI();
     },
 
+    calcStats(history) {
+        if(!history || history.length === 0) {
+            this.todayCount = 0;
+            this.todayEarnings = 0;
+            return;
+        }
+        
+        // FIXED: Count orders * DELIVERY_FEE ($2.99) instead of summing total price
+        this.todayCount = history.length;
+        this.todayEarnings = this.todayCount * this.DELIVERY_FEE;
+    },
+
     async completeOrder(orderId) {
+        if(!confirm("Confirm delivery?")) return;
+
         const btn = document.getElementById(`btn-complete-${orderId}`);
         if(btn) {
             btn.disabled = true;
@@ -167,21 +198,25 @@ const DeliveryDashboard = {
             if(window.lucide) lucide.createIcons();
         }
 
-        setTimeout(async () => {
-            await this.sendComplete(orderId);
+        const success = await this.sendComplete(orderId);
+        
+        if (success) {
             this.loadActiveOrders();
             this.loadHistory();
-        }, 800);
+        } else {
+            if(btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Swipe to Complete</span><i data-lucide="arrow-right" class="w-5 h-5"></i>`;
+                if(window.lucide) lucide.createIcons();
+            }
+        }
     },
 
     updateStatsUI() {
-        document.getElementById('stat-earnings').innerText = this.todayEarnings.toFixed(2);
-        document.getElementById('stat-count').innerText = this.todayCount;
-    },
-
-    toggleAvailability() {
-        this.isAvailable = !this.isAvailable;
-        this.updateStatusUI(this.isAvailable);
+        const earningsEl = document.getElementById('stat-earnings');
+        const countEl = document.getElementById('stat-count');
+        if(earningsEl) earningsEl.innerText = this.todayEarnings.toFixed(2);
+        if(countEl) countEl.innerText = this.todayCount;
     },
 
     updateStatusUI(isOnline) {
@@ -219,22 +254,32 @@ const DeliveryDashboard = {
             if(window.lucide) lucide.createIcons();
             return;
         }
-        // ... (Active order card HTML from previous version) ...
+        
         const order = orders[0];
-        const customer = order.customer || { name: "Guest", address: "Unknown", phoneNumber: "" };
+        const customer = order.customer || { name: "Guest", address: "Address not provided", phoneNumber: "" };
+        const address = customer.address || "Address not provided";
+
         container.innerHTML = `
             <div class="bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 border border-gray-100 animate-slide-up">
                 <div class="h-48 w-full bg-map-pattern relative border-b border-gray-100">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <span class="bg-white/90 backdrop-blur text-green-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 border border-green-100">
+                            <i data-lucide="map-pin" class="w-3 h-3 fill-green-600"></i> Destination
+                        </span>
+                    </div>
                     <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 -mt-4">
-                         <div class="relative"><div class="w-4 h-4 bg-orange-500 rounded-full animate-ping absolute top-0 left-0"></div><i data-lucide="map-pin" class="w-8 h-8 text-orange-600 relative z-10 fill-orange-600"></i></div>
+                         <div class="relative"><div class="w-4 h-4 bg-green-500 rounded-full animate-ping absolute top-0 left-0"></div><i data-lucide="map-pin" class="w-8 h-8 text-green-600 relative z-10 fill-green-600"></i></div>
                     </div>
                 </div>
                 <div class="p-6">
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <span class="bg-orange-600 text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase mb-2 inline-block">Order #${order.id}</span>
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">DROP-OFF AT</span>
+                                <span class="bg-orange-100 text-orange-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Order #${order.id}</span>
+                            </div>
                             <h2 class="text-2xl font-extrabold text-gray-900 leading-tight">${customer.name}</h2>
-                            <p class="text-gray-500 text-sm mt-1 flex items-start gap-1"><i data-lucide="map-pin" class="w-4 h-4 mt-0.5 shrink-0"></i> ${customer.address}</p>
+                            <p class="text-gray-500 text-sm mt-1 flex items-start gap-1"><i data-lucide="map-pin" class="w-4 h-4 mt-0.5 shrink-0 text-green-600"></i> ${address}</p>
                         </div>
                         <a href="tel:${customer.phoneNumber}" class="bg-green-100 text-green-700 p-3 rounded-full hover:bg-green-200 transition-colors"><i data-lucide="phone" class="w-6 h-6"></i></a>
                     </div>
@@ -249,32 +294,19 @@ const DeliveryDashboard = {
         if(window.lucide) lucide.createIcons();
     },
 
-    // Render only the top 5 for the Dashboard
     renderRecentHistory(history) {
         const container = document.getElementById('recent-history-list');
-        if(!container) return; // Guard clause in case we are not on dash view
+        if(!container) return; 
         
         if(!history || history.length === 0) {
             container.innerHTML = `<div class="bg-white p-8 rounded-2xl border border-dashed border-gray-200 text-center"><p class="text-gray-400 text-sm">No recent activity</p></div>`;
             return;
         }
 
-        container.innerHTML = history.slice(0, 5).map(item => `
-            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-default animate-slide-up">
-                <div class="flex items-center gap-4">
-                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><i data-lucide="check" class="w-5 h-5"></i></div>
-                    <div>
-                        <p class="font-bold text-gray-900 text-sm">Order #${item.id}</p>
-                        <p class="text-xs text-gray-500">${new Date(item.orderDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
-                    </div>
-                </div>
-                <div class="text-right"><span class="block font-extrabold text-green-600 text-sm">+$2.99</span></div>
-            </div>
-        `).join('');
+        container.innerHTML = history.slice(0, 5).map(item => this.createHistoryCard(item)).join('');
         if(window.lucide) lucide.createIcons();
     },
 
-    // Render EVERYTHING for the History View
     renderFullHistory(history) {
         const container = document.getElementById('full-history-list');
         if(!container) return;
@@ -286,7 +318,6 @@ const DeliveryDashboard = {
 
         container.innerHTML = history.map(item => `
             <div class="bg-white p-4 rounded-xl border border-gray-100 flex flex-col md:grid md:grid-cols-4 md:items-center gap-4 hover:bg-gray-50 transition">
-                <!-- Mobile Top Row -->
                 <div class="flex justify-between md:contents">
                     <div class="md:col-span-1">
                         <span class="md:hidden text-xs text-gray-400 uppercase font-bold">Order ID</span>
@@ -294,11 +325,9 @@ const DeliveryDashboard = {
                     </div>
                     <div class="md:col-span-1 text-right md:text-left">
                         <span class="md:hidden text-xs text-gray-400 uppercase font-bold">Date</span>
-                        <div class="text-sm text-gray-600">${new Date(item.orderDate).toLocaleDateString()} ${new Date(item.orderDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        <div class="text-sm text-gray-600">${this.formatDate(item.orderDate)}</div>
                     </div>
                 </div>
-                
-                <!-- Mobile Bottom Row -->
                 <div class="flex justify-between items-center md:contents border-t border-gray-50 pt-3 md:border-0 md:pt-0">
                     <div class="md:col-span-1">
                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700">
@@ -306,13 +335,36 @@ const DeliveryDashboard = {
                         </span>
                     </div>
                     <div class="md:col-span-1 text-right">
-                        <span class="font-extrabold text-green-600">+$2.99</span>
+                        <span class="font-extrabold text-green-600">+$${this.DELIVERY_FEE}</span>
                     </div>
                 </div>
             </div>
         `).join('');
-        
         if(window.lucide) lucide.createIcons();
+    },
+
+    createHistoryCard(item) {
+        return `
+            <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex items-center justify-between hover:shadow-md transition-shadow cursor-default animate-slide-up">
+                <div class="flex items-center gap-4">
+                    <div class="w-10 h-10 rounded-full bg-green-50 text-green-600 flex items-center justify-center"><i data-lucide="check" class="w-5 h-5"></i></div>
+                    <div>
+                        <p class="font-bold text-gray-900 text-sm">Order #${item.id}</p>
+                        <p class="text-xs text-gray-500">${this.formatDate(item.orderDate)}</p>
+                    </div>
+                </div>
+                <div class="text-right"><span class="block font-extrabold text-green-600 text-sm">+$${this.DELIVERY_FEE}</span></div>
+            </div>
+        `;
+    },
+
+    formatDate(dateVal) {
+        if(!dateVal) return "Unknown Date";
+        if(Array.isArray(dateVal)) {
+            const time = `${dateVal[3].toString().padStart(2,'0')}:${dateVal[4].toString().padStart(2,'0')}`;
+            return `${dateVal[2]}/${dateVal[1]} ${time}`; 
+        }
+        return new Date(dateVal).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }
 };
 

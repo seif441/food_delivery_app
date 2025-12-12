@@ -1,18 +1,17 @@
 package com.system.food_delivery_app.controller;
 
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import com.system.food_delivery_app.model.Order;
 import com.system.food_delivery_app.model.OrderStatus;
 import com.system.food_delivery_app.service.OrderService;
 
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "*") 
+// Global WebConfig handles CORS now, but keeping this specific one doesn't hurt if configured correctly
+@CrossOrigin(originPatterns = "*", allowCredentials = "true") 
 public class OrderController {
 
     @Autowired
@@ -23,58 +22,69 @@ public class OrderController {
         return ResponseEntity.ok(OrderStatus.values());
     }
 
-    // =========================================================================
-    //  CUSTOMER ENDPOINTS
-    // =========================================================================
-
+    // --- CUSTOMER: PLACE ORDER ---
     @PostMapping("/place")
-    public ResponseEntity<Order> placeOrder(@RequestBody Order order) {
-        Order newOrder = orderService.placeOrder(order);
-        return ResponseEntity.ok(newOrder);
+    public ResponseEntity<?> placeOrder(@RequestBody Order order) {
+        try {
+            System.out.println("--- NEW ORDER REQUEST ---");
+            if(order.getCustomer() != null) {
+                System.out.println("Customer ID: " + order.getCustomer().getId());
+            } else {
+                System.err.println("WARNING: Customer object is NULL");
+            }
+            System.out.println("Items count: " + (order.getItems() != null ? order.getItems().size() : "0"));
+
+            Order newOrder = orderService.placeOrder(order);
+            return ResponseEntity.ok(newOrder);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error placing order: " + e.getMessage());
+        }
     }
 
-    // --- UPDATED: Added Error Handling for Debugging ---
+    // --- CUSTOMER: GET ORDERS ---
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<?> getOrdersByCustomer(@PathVariable Long customerId) {
         try {
             System.out.println("Fetching orders for Customer ID: " + customerId);
             List<Order> orders = orderService.getOrdersByCustomer(customerId);
+            System.out.println("Found: " + orders.size() + " orders");
             return ResponseEntity.ok(orders);
         } catch (Exception e) {
-            // This prints the REAL error to your IntelliJ/Eclipse Console
-            e.printStackTrace(); 
-            // This sends the error text to the Frontend so you can read it
-            return ResponseEntity.status(500).body("Server Error: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching orders: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> cancelOrder(@PathVariable Long id) {
-        orderService.cancelOrder(id);
-        return ResponseEntity.ok("Order cancelled successfully");
+        try {
+            orderService.cancelOrder(id);
+            return ResponseEntity.ok("Order cancelled successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(e.getMessage());
+        }
     }
 
-    // =========================================================================
-    //  KITCHEN / STAFF ENDPOINTS
-    // =========================================================================
-
+    // --- KITCHEN ---
     @PutMapping("/{id}/prepared")
-    public ResponseEntity<Order> markOrderPrepared(@PathVariable Long id) {
-        Order updatedOrder = orderService.staffMarkAsPrepared(id);
-        return ResponseEntity.ok(updatedOrder);
+    public ResponseEntity<?> markOrderPrepared(@PathVariable Long id) {
+        try {
+            Order updatedOrder = orderService.staffMarkAsPrepared(id);
+            return ResponseEntity.ok(updatedOrder);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(e.getMessage());
+        }
     }
 
-    // =========================================================================
-    //  ADMIN / GENERAL ENDPOINTS
-    // =========================================================================
-
+    // --- GENERAL ---
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));
     }
 
     @GetMapping("/all")
-    public ResponseEntity<List<Order>> getAllOrders() {
+    public ResponseEntity<?> getAllOrders() {
         return ResponseEntity.ok(orderService.getAllOrders());
     }
 
