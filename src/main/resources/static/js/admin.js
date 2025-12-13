@@ -37,7 +37,7 @@ async function loadAllData() {
                     id: p.id,
                     name: p.name,
                     price: p.price,
-                    description: p.description || '', // Added from friend's logic
+                    description: p.description || '',
                     available: p.available,
                     image: p.imageUrl || 'https://via.placeholder.com/300?text=No+Image'
                 }))
@@ -138,27 +138,34 @@ function getMenuHtml() {
                 <i data-lucide="plus-circle" class="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-orange-400"></i>
                 <p class="text-gray-400 text-sm group-hover:text-orange-600">Add first product to ${cat.name}</p></div>`
             : cat.products.map(p => {
-                // Prepare object string for passing to onclick
+                // Safely convert object to string
                 const pString = JSON.stringify(p).replace(/"/g, '&quot;');
                 
+                // --- FRIEND'S CARD STYLE APPLIED HERE ---
                 return `<div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-orange-100 transition-all duration-300 flex flex-col ${!p.available ? 'opacity-75 grayscale' : ''}">
                     <div class="h-48 w-full bg-gray-100 relative overflow-hidden">
                         <img src="${p.image}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                             <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="bg-white text-gray-800 p-2 rounded-full hover:bg-orange-500 hover:text-white transition-colors" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-                             <button onclick="handleToggleAvailability('${p.id}')" class="bg-white text-gray-800 p-2 rounded-full hover:bg-blue-500 hover:text-white transition-colors" title="Toggle Visibility"><i data-lucide="${p.available ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="text-white text-sm font-medium hover:underline flex items-center">Edit Details <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i></button>
                         </div>
+                        
                         <div class="absolute top-3 right-3"><span class="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm backdrop-blur-md ${p.available ? 'bg-white/90 text-green-700' : 'bg-gray-800/90 text-white'}">${p.available ? 'Active' : 'Hidden'}</span></div>
                     </div>
+                    
                     <div class="p-5 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-bold text-lg text-gray-800 leading-tight">${p.name}</h3>
                             <span class="font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg text-sm">$${p.price.toFixed(2)}</span>
                         </div>
+                        
                         <div class="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
-                            <span class="text-xs text-gray-400">ID: ${p.id}</span>
+                            <button onclick="handleToggleAvailability('${p.id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${p.available ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}">
+                                <i data-lucide="${p.available ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i> <span>${p.available ? 'Hide' : 'Show'}</span>
+                            </button>
+                            
                             <div class="flex items-center space-x-1">
-                                <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg md:hidden"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                 <button onclick="handleDeleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
@@ -233,10 +240,10 @@ async function handleFormSubmit(e) {
                 password: formData.get('password')
             };
 
-            // ADDED: Special Logic for Delivery Staff (YOUR REQUEST)
+            // Delivery Logic
             if (role === 'DELIVERY_STAFF') {
                 staffData.dtype = "DELIVERY_STAFF";
-                staffData.isAvailable = 0; // Explicitly set to 0 as requested
+                staffData.isAvailable = 0; 
             } else {
                 staffData.dtype = "STAFF"; 
             }
@@ -262,7 +269,6 @@ async function handleFormSubmit(e) {
             alert("Product Added");
         }
         else if (type === 'editProduct') {
-            // ADDED: Update logic from friend
             await api.updateProduct(item.id, {
                 name: formData.get('name'),
                 description: formData.get('description'),
@@ -288,7 +294,6 @@ async function handleDeleteProduct(id) {
     if(!confirm("Remove Product?")) return;
     try { await api.deleteProduct(id); loadAllData(); } catch(e) { alert("Error deleting product"); }
 }
-// ADDED: Toggle Helper
 async function handleToggleAvailability(id) {
     try { await api.toggleProductAvailability(id); loadAllData(); } catch(e) { alert("Error updating status"); }
 }
