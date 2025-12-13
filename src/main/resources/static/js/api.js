@@ -74,11 +74,16 @@ const api = {
         return await response.json();
     },
 
-    addCategory: async (description) => {
+    // UPDATED: Now accepts and sends 'icon'
+    addCategory: async (name, icon) => {
         const response = await fetch(`${API_BASE}/categories/add`, {
             method: 'POST',
             headers: api.getHeaders(),
-            body: JSON.stringify({ description: description, name: description }) 
+            body: JSON.stringify({ 
+                name: name, 
+                description: name, 
+                icon: icon || '🍽️' // Send icon to backend
+            }) 
         });
         if (!response.ok) throw new Error("Failed to add category");
         return await response.json();
@@ -189,7 +194,7 @@ const api = {
     },
 
     // ============================
-    // 4. ADDRESS MANAGEMENT (NEW)
+    // 4. ADDRESS MANAGEMENT
     // ============================
 
     getAddresses: async (userId) => {
