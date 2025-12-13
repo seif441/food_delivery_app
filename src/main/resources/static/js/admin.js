@@ -1,70 +1,104 @@
 let state = {
-    activeTab: 'menu',
+    activeTab: 'dashboard',
     isSidebarOpen: false,
     modal: { isOpen: false, type: null, item: null, catId: null },
+    
+    // Real Data Containers
     categories: [], 
+    products: [],
     staff: [],      
-    orders: [       
-        { id: '#ORD-7782', customer: 'Alice Freeman', total: 45.20, status: 'Cooking', items: 3, time: '12 mins ago' },
-        { id: '#ORD-7781', customer: 'Bob Vance', total: 22.50, status: 'Ready', items: 1, time: '25 mins ago' },
-        { id: '#ORD-7780', customer: 'Phyllis L.', total: 112.00, status: 'Delivered', items: 8, time: '1 hour ago' },
-    ], 
+    orders: [],
+    
+    // Stats (Will be calculated from real data)
     stats: [
-       { label: 'Total Revenue', value: '$12,450', change: '+12%', icon: 'dollar-sign', color: 'bg-emerald-100 text-emerald-600' },
-       { label: 'Active Orders', value: '18', change: '-2%', icon: 'clock', color: 'bg-orange-100 text-orange-600' },
-       { label: 'Pending Delivery', value: '5', change: '0%', icon: 'shopping-bag', color: 'bg-blue-100 text-blue-600' },
+       { label: 'Total Revenue', value: '$0.00', change: '0%', icon: 'dollar-sign', color: 'bg-emerald-100 text-emerald-600' },
+       { label: 'Active Orders', value: '0', change: '0%', icon: 'clock', color: 'bg-orange-100 text-orange-600' },
+       { label: 'Pending Delivery', value: '0', change: '0%', icon: 'shopping-bag', color: 'bg-blue-100 text-blue-600' },
        { label: 'Total Staff', value: '0', change: '0%', icon: 'users', color: 'bg-purple-100 text-purple-600' },
     ]
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Security Check
+    const user = api.getUser();
+    if (!user || (user.role && user.role.roleName !== 'ADMIN')) {
+        window.location.href = 'auth.html'; // Redirect if not admin
+        return;
+    }
     loadAllData();
 });
 
 async function loadAllData() {
     try {
-        const [cats, prods] = await Promise.all([
+        // Fetch ALL data in parallel
+        const [cats, prods, users, orders] = await Promise.all([
             api.getAllCategories(),
-            api.getAllProducts()
+            api.getAllProducts(),
+            api.getAllUsers(),
+            api.getAllOrders()
         ]);
 
+        // 1. Setup Menu Data
+        state.products = prods;
         state.categories = cats.map(c => {
             return {
                 id: c.id,
-                name: c.description || c.name || `Category ${c.id}`,
+                name: c.description || c.name,
                 icon: c.icon || '🍽️', 
+                // Filter products that belong to this category
                 products: prods.filter(p => p.category && p.category.id === c.id).map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    price: p.price,
-                    description: p.description || '',
-                    available: p.available,
+                    ...p,
                     image: p.imageUrl || 'https://via.placeholder.com/300?text=No+Image'
                 }))
             };
         });
-    } catch (e) { console.error("Menu Load Error", e); }
 
-    try {
-        const users = await api.getAllUsers();
-        state.staff = users.map(u => ({
+        // 2. Setup Staff Data
+        state.staff = users.filter(u => u.role && (u.role.roleName === 'STAFF' || u.role.roleName === 'DELIVERY_STAFF' || u.role.roleName === 'ADMIN')).map(u => ({
             id: u.id,
             name: u.name,
             email: u.email,
-            role: u.role ? (u.role.roleName || u.role.name) : 'No Role',
+            role: u.role ? u.role.roleName : 'User',
             avatar: u.name ? u.name.substring(0,2).toUpperCase() : 'UR'
         }));
-        state.stats[3].value = state.staff.length.toString();
-    } catch (e) { console.error("Staff Load Error", e); }
+
+        // 3. Setup Orders Data & Calculate Stats
+        state.orders = orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)); // Newest first
+        calculateStats();
+
+    } catch (e) { 
+        console.error("Data Load Error", e); 
+        alert("Failed to load dashboard data. Check console.");
+    }
 
     render();
+}
+
+function calculateStats() {
+    // 1. Total Revenue (Sum of all DELIVERED orders)
+    const revenue = state.orders
+        .filter(o => o.status === 'DELIVERED')
+        .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+    
+    state.stats[0].value = `$${revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+
+    // 2. Active Orders (PENDING, PREPARING, PREPARED, OUT_FOR_DELIVERY)
+    const activeCount = state.orders.filter(o => ['PENDING', 'PREPARING', 'PREPARED', 'OUT_FOR_DELIVERY'].includes(o.status)).length;
+    state.stats[1].value = activeCount.toString();
+
+    // 3. Pending Delivery (Specifically OUT_FOR_DELIVERY)
+    const deliveryCount = state.orders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
+    state.stats[2].value = deliveryCount.toString();
+
+    // 4. Total Staff
+    state.stats[3].value = state.staff.length.toString();
 }
 
 function render() {
     renderSidebar();
     renderHeader();
     renderMainContent();
-    lucide.createIcons();
+    if(window.lucide) lucide.createIcons();
 }
 
 function renderSidebar() {
@@ -88,7 +122,7 @@ function renderSidebar() {
 }
 
 function renderHeader() {
-    const titles = { dashboard: 'Dashboard Overview', menu: 'Menu Management', orders: 'Live Orders', staff: 'Team Members' };
+    const titles = { dashboard: 'Dashboard Overview', menu: 'Menu Management', orders: 'All Orders', staff: 'Team Members' };
     document.getElementById('header-title').innerHTML = `<h2 class="text-xl md:text-2xl font-bold text-gray-900">${titles[state.activeTab]}</h2>`;
 
     const actionsDiv = document.getElementById('header-actions');
@@ -112,14 +146,101 @@ function renderMainContent() {
 }
 
 function getDashboardHtml() {
+    // 1. Calculate Stats
     const statsHtml = state.stats.map(stat => `
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-between hover:shadow-md transition-shadow">
-            <div><p class="text-sm font-medium text-gray-500 mb-1">${stat.label}</p><h2 class="text-2xl font-bold text-gray-800">${stat.value}</h2><p class="text-xs font-medium mt-2 flex items-center ${stat.change.startsWith('+') ? 'text-emerald-600' : 'text-red-500'}">${stat.change}</p></div>
+            <div><p class="text-sm font-medium text-gray-500 mb-1">${stat.label}</p><h2 class="text-2xl font-bold text-gray-800">${stat.value}</h2></div>
             <div class="p-3 rounded-full ${stat.color} bg-opacity-20"><i data-lucide="${stat.icon}" class="w-6 h-6"></i></div>
         </div>`).join('');
     
-    return `<div class="space-y-6 animate-fade-in-up"><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">${statsHtml}</div>
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center"><h3 class="text-lg font-medium text-gray-500">System Ready. Data will populate as activity occurs.</h3></div></div>`;
+    // 2. Recent Orders Table
+    const recentOrdersHtml = state.orders.slice(0, 5).map(o => {
+        const statusColor = getStatusColor(o.status);
+        return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
+            <td class="p-4 font-bold text-gray-700">#${o.id}</td>
+            <td class="p-4 text-gray-600">${o.customer ? o.customer.name : 'Guest'}</td>
+            <td class="p-4 text-gray-900 font-bold">$${o.totalPrice.toFixed(2)}</td>
+            <td class="p-4"><span class="px-2 py-1 rounded text-xs font-bold ${statusColor}">${o.status}</span></td>
+        </tr>`;
+    }).join('');
+
+    // --- FIX START: Define salesMap HERE before the loop ---
+    const salesMap = {}; 
+    
+    // 3. Loop through real orders to count product sales
+    if (state.orders && state.orders.length > 0) {
+        state.orders.forEach(order => {
+            // Only count valid orders
+            if (order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.items) {
+                order.items.forEach(item => {
+                    const product = item.product;
+                    // Check if product exists to avoid crashing
+                    if (product && product.id) {
+                        if (!salesMap[product.id]) {
+                            salesMap[product.id] = {
+                                name: product.name,
+                                price: product.price,
+                                image: product.imageUrl || 'https://via.placeholder.com/150',
+                                count: 0
+                            };
+                        }
+                        salesMap[product.id].count += item.quantity;
+                    }
+                });
+            }
+        });
+    }
+    // --- FIX END ---
+
+    // 4. Sort and Top 5
+    const topSellingProducts = Object.values(salesMap)
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // 5. Generate HTML
+    const topSellingHtml = topSellingProducts.length > 0 ? topSellingProducts.map(p => `
+        <div class="flex items-center space-x-4 mb-6 last:mb-0 group">
+            <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
+                <img src="${p.image}" class="w-full h-full object-cover" alt="${p.name}" onerror="this.src='https://via.placeholder.com/150'">
+            </div>
+            
+            <div class="flex-1 min-w-0">
+                <h4 class="text-sm font-bold text-gray-900 truncate">${p.name}</h4>
+                <p class="text-xs text-gray-500 font-medium mt-1">${p.count} orders</p>
+            </div>
+            
+            <div class="text-right">
+                <span class="text-sm font-bold text-gray-900">$${p.price.toFixed(2)}</span>
+            </div>
+        </div>
+    `).join('') : '<div class="text-center py-8 text-gray-400 text-sm">No sales data recorded yet.</div>';
+
+    // 6. Return Final HTML
+    return `<div class="space-y-6 animate-fade-in-up">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">${statsHtml}</div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/30">
+                    <h3 class="font-bold text-gray-800">Recent Activity</h3>
+                    <button onclick="switchTab('orders')" class="text-orange-600 text-sm font-medium hover:underline">View All</button>
+                </div>
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-xs text-gray-500 uppercase"><tr><th class="p-4">Order ID</th><th class="p-4">Customer</th><th class="p-4">Total</th><th class="p-4">Status</th></tr></thead>
+                        <tbody>${recentOrdersHtml || '<tr><td colspan="4" class="p-8 text-center text-gray-400">No orders found.</td></tr>'}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col h-full">
+                <h3 class="font-bold text-gray-800 mb-6">Top Selling Items</h3>
+                <div class="flex-1 overflow-y-auto pr-2">
+                    ${topSellingHtml}
+                </div>
+            </div>
+        </div>
+    </div>`;
 }
 
 function getMenuHtml() {
@@ -127,8 +248,7 @@ function getMenuHtml() {
         return `<div class="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-gray-200 animate-fade-in-up">
                 <div class="bg-gray-50 p-4 rounded-full inline-block mb-4"><i data-lucide="layout-grid" class="w-8 h-8 text-gray-300"></i></div>
                 <h3 class="text-lg font-medium text-gray-900">No categories found</h3>
-                <p class="text-gray-500 mb-6">Create a category to get started.</p>
-                <button onclick="openModal('addCategory')" class="text-orange-600 font-medium hover:underline">Create Category</button>
+                <button onclick="openModal('addCategory')" class="text-orange-600 font-medium hover:underline mt-2">Create Category</button>
             </div>`;
     }
 
@@ -138,32 +258,24 @@ function getMenuHtml() {
                 <i data-lucide="plus-circle" class="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-orange-400"></i>
                 <p class="text-gray-400 text-sm group-hover:text-orange-600">Add first product to ${cat.name}</p></div>`
             : cat.products.map(p => {
-                // Safely convert object to string
                 const pString = JSON.stringify(p).replace(/"/g, '&quot;');
-                
-                // --- FRIEND'S CARD STYLE APPLIED HERE ---
                 return `<div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-orange-100 transition-all duration-300 flex flex-col ${!p.available ? 'opacity-75 grayscale' : ''}">
                     <div class="h-48 w-full bg-gray-100 relative overflow-hidden">
                         <img src="${p.image}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                        
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                             <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="text-white text-sm font-medium hover:underline flex items-center">Edit Details <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i></button>
                         </div>
-                        
                         <div class="absolute top-3 right-3"><span class="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm backdrop-blur-md ${p.available ? 'bg-white/90 text-green-700' : 'bg-gray-800/90 text-white'}">${p.available ? 'Active' : 'Hidden'}</span></div>
                     </div>
-                    
                     <div class="p-5 flex-1 flex flex-col">
                         <div class="flex justify-between items-start mb-2">
                             <h3 class="font-bold text-lg text-gray-800 leading-tight">${p.name}</h3>
                             <span class="font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-lg text-sm">$${p.price.toFixed(2)}</span>
                         </div>
-                        
                         <div class="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
                             <button onclick="handleToggleAvailability('${p.id}')" class="text-xs font-medium px-3 py-1.5 rounded-lg transition-colors flex items-center space-x-1.5 ${p.available ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}">
                                 <i data-lucide="${p.available ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i> <span>${p.available ? 'Hide' : 'Show'}</span>
                             </button>
-                            
                             <div class="flex items-center space-x-1">
                                 <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                 <button onclick="handleDeleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -209,20 +321,59 @@ function getStaffHtml() {
     return `<div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden animate-fade-in-up">
         <table class="w-full text-left border-collapse">
             <thead class="bg-gray-50 border-b border-gray-200"><tr><th class="p-4 pl-6 text-xs font-semibold text-gray-500 uppercase">Employee</th><th class="p-4 text-xs font-semibold text-gray-500 uppercase">Role</th><th class="p-4 pr-6 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th></tr></thead>
-            <tbody class="divide-y divide-gray-100">${rows.length ? rows : '<tr><td colspan="3" class="p-10 text-center text-gray-400">No staff found via API.</td></tr>'}</tbody>
+            <tbody class="divide-y divide-gray-100">${rows.length ? rows : '<tr><td colspan="3" class="p-10 text-center text-gray-400">No staff found.</td></tr>'}</tbody>
         </table>
     </div>`;
 }
 
 function getOrdersHtml() {
     if(state.orders.length === 0) {
-        return `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center"><h3 class="text-lg font-medium text-gray-500">No active orders found.</h3></div>`;
+        return `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center"><h3 class="text-lg font-medium text-gray-500">No orders found.</h3></div>`;
     }
-    return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">${state.orders.map(o => `
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 border-l-4 border-l-orange-500"><div class="flex justify-between items-start mb-4"><div><span class="text-xs font-bold text-gray-400 uppercase">${o.id}</span><h3 class="font-bold text-lg text-gray-800">${o.customer}</h3></div><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">${o.status}</span></div><div class="flex justify-between items-center pt-4 border-t border-gray-100"><span class="font-bold text-xl text-gray-800">$${o.total.toFixed(2)}</span></div></div>`).join('')}</div>`;
+    
+    // Grid View for Orders
+    return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">${state.orders.map(o => {
+        const statusColor = getStatusColor(o.status);
+        const itemCount = o.items ? o.items.reduce((acc, i) => acc + i.quantity, 0) : 0;
+        const time = new Date(o.orderDate).toLocaleString();
+
+        return `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 border-l-4 ${statusColor.includes('green') ? 'border-l-green-500' : (statusColor.includes('orange') ? 'border-l-orange-500' : 'border-l-gray-300')}">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <span class="text-xs font-bold text-gray-400 uppercase">#${o.id}</span>
+                    <h3 class="font-bold text-lg text-gray-800">${o.customer ? o.customer.name : 'Guest'}</h3>
+                    <p class="text-xs text-gray-500 mt-1">${time}</p>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusColor}">${o.status}</span>
+            </div>
+            
+            <div class="text-sm text-gray-600 mb-4 bg-gray-50 p-2 rounded">
+                 ${itemCount} Items • ${o.deliveryStaff ? `Driver: ${o.deliveryStaff.name}` : 'No Driver Assigned'}
+            </div>
+
+            <div class="flex justify-between items-center pt-4 border-t border-gray-100">
+                <span class="font-bold text-xl text-gray-800">$${o.totalPrice.toFixed(2)}</span>
+                ${o.status === 'PENDING' ? 
+                    `<button onclick="alert('Order is pending kitchen acceptance')" class="text-xs text-gray-400">Waiting for Kitchen</button>` : 
+                    `<span class="text-xs text-green-600 font-bold">In Progress</span>`
+                }
+            </div>
+        </div>`;
+    }).join('')}</div>`;
 }
 
-// --- FORM HANDLING ---
+function getStatusColor(status) {
+    switch(status) {
+        case 'PENDING': return 'bg-yellow-100 text-yellow-700';
+        case 'PREPARING': return 'bg-orange-100 text-orange-700';
+        case 'PREPARED': return 'bg-blue-100 text-blue-700';
+        case 'OUT_FOR_DELIVERY': return 'bg-purple-100 text-purple-700';
+        case 'DELIVERED': return 'bg-green-100 text-green-700';
+        default: return 'bg-gray-100 text-gray-700';
+    }
+}
+
+// --- FORM HANDLING (UNCHANGED logic, just cleaned up) ---
 
 async function handleFormSubmit(e) {
     e.preventDefault();
@@ -232,29 +383,20 @@ async function handleFormSubmit(e) {
     try {
         if (type === 'addStaff') {
             const role = formData.get('role');
-            
-            // Base User Data
             const staffData = {
                 name: formData.get('name'),
                 email: formData.get('email'),
                 password: formData.get('password')
             };
-
-            // Delivery Logic
-            if (role === 'DELIVERY_STAFF') {
-                staffData.dtype = "DELIVERY_STAFF";
-                staffData.isAvailable = 0; 
-            } else {
-                staffData.dtype = "STAFF"; 
-            }
+            // Set dtype based on role
+            staffData.dtype = (role === 'DELIVERY_STAFF') ? "DELIVERY_STAFF" : "STAFF";
+            if(role === 'DELIVERY_STAFF') staffData.isAvailable = 0; 
 
             await api.addStaffMember(staffData, role);
             alert("Staff Added");
         } 
         else if (type === 'addCategory') {
-            const name = formData.get('catName');
-            const icon = formData.get('icon'); 
-            await api.addCategory(name, icon);
+            await api.addCategory(formData.get('catName'), formData.get('icon'));
             alert("Category Added");
         } 
         else if (type === 'addProduct') {
@@ -280,7 +422,7 @@ async function handleFormSubmit(e) {
             alert("Product Updated");
         }
         closeModal();
-        loadAllData(); 
+        loadAllData(); // RELOAD DATA
     } catch (err) {
         alert("Operation failed: " + err.message);
     }

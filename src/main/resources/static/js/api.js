@@ -334,4 +334,27 @@ const api = {
         if (!response.ok) throw new Error('Failed to update status');
         return await response.json();
     },
+    // ... inside api object ...
+
+    // ============================
+    // 6. ADMIN ORDER MANAGEMENT (NEW)
+    // ============================
+
+    getAllOrders: async () => {
+        const response = await fetch(`${API_BASE}/orders/all`, { 
+            headers: api.getHeaders() 
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
+
+    updateOrderStatus: async (orderId, status) => {
+        const response = await fetch(`${API_BASE}/orders/${orderId}/status?status=${status}`, {
+            method: 'PUT',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to update status");
+        return await response.json();
+    },
+
 };
