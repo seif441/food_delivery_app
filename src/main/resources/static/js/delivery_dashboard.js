@@ -256,8 +256,29 @@ const DeliveryDashboard = {
         }
         
         const order = orders[0];
-        const customer = order.customer || { name: "Guest", address: "Address not provided", phoneNumber: "" };
-        const address = customer.address || "Address not provided";
+        const customer = order.customer || { name: "Guest", phoneNumber: "" };
+        
+        // --- ADDRESS PARSING LOGIC ---
+        // 1. Try new DeliveryAddress object
+        // 2. Try array of addresses on Customer
+        // 3. Try legacy string
+        let fullAddress = "Address not provided";
+        let additionalInfo = "";
+
+        if (order.deliveryAddress) {
+            const da = order.deliveryAddress;
+            fullAddress = `${da.streetAddress}, ${da.city}`;
+            if(da.postalCode) fullAddress += ` ${da.postalCode}`;
+            if(da.additionalInfo) additionalInfo = da.additionalInfo;
+        } else if (customer.addresses && customer.addresses.length > 0) {
+            // Fallback: Use the user's first saved address
+            const da = customer.addresses[0];
+            fullAddress = `${da.streetAddress}, ${da.city}`;
+            if(da.postalCode) fullAddress += ` ${da.postalCode}`;
+            if(da.additionalInfo) additionalInfo = da.additionalInfo;
+        } else if (customer.address) {
+            fullAddress = customer.address;
+        }
 
         container.innerHTML = `
             <div class="bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 border border-gray-100 animate-slide-up">
@@ -279,7 +300,13 @@ const DeliveryDashboard = {
                                 <span class="bg-orange-100 text-orange-800 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Order #${order.id}</span>
                             </div>
                             <h2 class="text-2xl font-extrabold text-gray-900 leading-tight">${customer.name}</h2>
-                            <p class="text-gray-500 text-sm mt-1 flex items-start gap-1"><i data-lucide="map-pin" class="w-4 h-4 mt-0.5 shrink-0 text-green-600"></i> ${address}</p>
+                            <div class="mt-2">
+                                <p class="text-gray-700 text-sm font-medium flex items-start gap-2">
+                                    <i data-lucide="map-pin" class="w-4 h-4 mt-0.5 shrink-0 text-orange-600"></i> 
+                                    ${fullAddress}
+                                </p>
+                                ${additionalInfo ? `<p class="text-xs text-orange-600 mt-1 ml-6 bg-orange-50 p-2 rounded-lg border border-orange-100"><span class="font-bold">Note:</span> ${additionalInfo}</p>` : ''}
+                            </div>
                         </div>
                         <a href="tel:${customer.phoneNumber}" class="bg-green-100 text-green-700 p-3 rounded-full hover:bg-green-200 transition-colors"><i data-lucide="phone" class="w-6 h-6"></i></a>
                     </div>

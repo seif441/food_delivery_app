@@ -6,7 +6,9 @@ let state = {
     cartId: null,      // Stores the ID of the cart from the database
     cartItems: [],     // Stores the array of items in the cart
     products: [],      // Stores loaded products
-    categories: []     // Stores loaded categories
+    categories: [],    // Stores loaded categories
+    addresses: [],     // Store user addresses
+    pendingAction: null // To store 'checkout' intent when forced to add address
 };
 
 // --- Initialization ---
@@ -18,9 +20,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCategories();
     await loadProducts('all');
     
-    // 2. Initialize Cart (if logged in)
+    // 2. Initialize Cart & Addresses (if logged in)
     if (state.user) {
         await refreshCart();
+        await loadUserAddresses();
     }
     
     // 3. Setup Global Event Listeners
@@ -28,7 +31,83 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. HEADER & AUTHENTICATION UI
+// 1. ADDRESS MANAGEMENT LOGIC
+// ==========================================
+
+async function loadUserAddresses() {
+    if (!state.user) return;
+    state.addresses = await api.getAddresses(state.user.id);
+    updateLocationHeader();
+}
+
+function updateLocationHeader() {
+    const btn = document.getElementById('header-address-text');
+    if (!btn) return;
+
+    if (state.addresses && state.addresses.length > 0) {
+        // Show the first address
+        const addr = state.addresses[0];
+        btn.textContent = `${addr.streetAddress}, ${addr.city}`;
+        btn.classList.remove('text-gray-400');
+        btn.classList.add('text-gray-700');
+    } else {
+        btn.textContent = "Set Location";
+        btn.classList.add('text-gray-400');
+    }
+}
+
+function openAddressModal() {
+    if (!state.user) return window.location.href = 'auth.html';
+    document.getElementById('address-modal').classList.remove('hidden');
+}
+
+function closeAddressModal() {
+    document.getElementById('address-modal').classList.add('hidden');
+}
+
+async function handleAddressSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    // Construct payload for Java Entity
+    // Note: We wrap "user" object because of @ManyToOne relation
+    const payload = {
+        streetAddress: formData.get('streetAddress'),
+        city: formData.get('city'),
+        postalCode: formData.get('postalCode'),
+        additionalInfo: formData.get('additionalInfo'),
+        user: { id: state.user.id } 
+    };
+
+    const btn = form.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        await api.createAddress(payload);
+        await loadUserAddresses(); // Refresh local state
+        closeAddressModal();
+        form.reset();
+        
+        // If we were trying to checkout, resume now
+        if (state.pendingAction === 'checkout') {
+            state.pendingAction = null;
+            openCartDrawer(); // Re-open drawer
+            handleCheckout(); // Retry checkout
+        }
+
+    } catch (err) {
+        alert("Error saving address: " + err.message);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+// ==========================================
+// 2. HEADER & AUTHENTICATION UI
 // ==========================================
 
 function updateHeaderUser() {
@@ -62,9 +141,11 @@ function logout() {
     state.user = null;
     state.cartId = null;
     state.cartItems = [];
+    state.addresses = [];
     
     // Reset UI
     updateHeaderUser();
+    updateLocationHeader();
     updateCartUI();
     
     // Optional: Redirect to home
@@ -72,7 +153,7 @@ function logout() {
 }
 
 // ==========================================
-// 2. DATA LOADING (MENU)
+// 3. DATA LOADING (MENU)
 // ==========================================
 
 async function loadCategories() {
@@ -142,7 +223,7 @@ async function loadProducts(catId) {
 }
 
 // ==========================================
-// 3. CART LOGIC (BACKEND INTEGRATED)
+// 4. CART LOGIC (BACKEND INTEGRATED)
 // ==========================================
 
 async function refreshCart() {
@@ -211,7 +292,6 @@ async function updateCartQty(productId, delta) {
 
 function updateCartUI() {
     // Calculate Totals based on current state
-    // Note: Backend 'item.price' is usually (Unit Price * Quantity).
     const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0);
     const count = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -272,6 +352,14 @@ async function handleCheckout() {
     if (!state.user) return window.location.href = 'auth.html';
     if (state.cartItems.length === 0) return alert("Your basket is empty!");
 
+    // 2. CHECK IF USER HAS ADDRESS (UPDATED LOGIC)
+    if (!state.addresses || state.addresses.length === 0) {
+        state.pendingAction = 'checkout';
+        closeCartDrawer();
+        openAddressModal();
+        return;
+    }
+
     const checkoutBtn = document.getElementById('checkout-btn');
     if(checkoutBtn) {
         checkoutBtn.disabled = true;
@@ -279,8 +367,7 @@ async function handleCheckout() {
     }
 
     try {
-        // 2. Prepare Data for Backend
-        // We calculate total locally, but backend should re-verify
+        // 3. Prepare Data for Backend
         const subtotal = state.cartItems.reduce((sum, item) => sum + item.price, 0);
         const deliveryFee = 2.99;
         
@@ -297,27 +384,26 @@ async function handleCheckout() {
             }))
         };
 
-        // 3. Send to Backend
+        // 4. Send to Backend
         console.log("Sending Order:", orderPayload); // Debugging
         const createdOrder = await api.placeOrder(orderPayload);
         console.log("Order Created:", createdOrder);
 
-        // 4. Clear Cart (Now it's safe to delete cart items)
+        // 5. Clear Cart (Now it's safe to delete cart items)
         if (state.cartId) {
             await api.clearCart(state.cartId);
         }
 
-        // 5. Success UI
+        // 6. Success UI
         closeCartDrawer();
         const overlay = document.getElementById('success-overlay');
-        // If you don't have an overlay element in HTML, just alert
         if(overlay) {
             overlay.classList.remove('hidden');
         } else {
             alert("Order Placed Successfully!");
         }
 
-        // 6. Reset State and Redirect
+        // 7. Reset State and Redirect
         state.cartItems = [];
         updateCartUI();
 
@@ -336,7 +422,7 @@ async function handleCheckout() {
 }
 
 // ==========================================
-// 4. MODALS (DETAIL & AUTH)
+// 5. MODALS (DETAIL, AUTH & ADDRESS)
 // ==========================================
 
 function openDetailModal(productId) {
@@ -434,5 +520,11 @@ function setupEventListeners() {
                 alert(err.message); 
             }
         };
+    }
+
+    // NEW: Address Form Listener
+    const addressForm = document.getElementById('address-form');
+    if(addressForm) {
+        addressForm.addEventListener('submit', handleAddressSubmit);
     }
 }

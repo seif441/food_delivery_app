@@ -74,9 +74,7 @@ const api = {
         return await response.json();
     },
 
-    // NEW FUNCTION
     addCategory: async (description) => {
-        // We send 'description' as BOTH description and name to satisfy database rules
         const response = await fetch(`${API_BASE}/categories/add`, {
             method: 'POST',
             headers: api.getHeaders(),
@@ -191,16 +189,36 @@ const api = {
     },
 
     // ============================
-    // 4. ADMIN & STAFF DASHBOARDS
+    // 4. ADDRESS MANAGEMENT (NEW)
     // ============================
 
-    // NEW FUNCTION
+    getAddresses: async (userId) => {
+        try {
+            const response = await fetch(`${API_BASE}/addresses?userId=${userId}`, { headers: api.getHeaders() });
+            if (!response.ok) return [];
+            return await response.json();
+        } catch(e) { console.error(e); return []; }
+    },
+
+    createAddress: async (addressData) => {
+        const response = await fetch(`${API_BASE}/addresses`, {
+            method: 'POST',
+            headers: api.getHeaders(),
+            body: JSON.stringify(addressData)
+        });
+        if (!response.ok) throw new Error("Failed to save address");
+        return await response.json();
+    },
+
+    // ============================
+    // 5. ADMIN & STAFF DASHBOARDS
+    // ============================
+
     getAllUsers: async () => {
         const response = await fetch(`${API_BASE}/admins/users`, { headers: api.getHeaders() });
         return response.ok ? await response.json() : [];
     },
 
-    // NEW FUNCTION
     deleteUser: async (id) => {
         const response = await fetch(`${API_BASE}/admins/users/${id}`, { 
             method: 'DELETE', 
@@ -209,8 +227,6 @@ const api = {
         if (!response.ok) throw new Error("Failed to delete user");
     },
 
-
-    // Admin: Add new Staff
     addStaffMember: async (userData, roleName) => {
         const response = await fetch(`${API_BASE}/admins/staff?roleName=${roleName}`, {
             method: 'POST',
@@ -222,7 +238,7 @@ const api = {
     },
 
     addProduct: async (productDTO) => {
-    const response = await fetch(`${API_BASE}/products/add`, {
+        const response = await fetch(`${API_BASE}/products/add`, {
             method: 'POST',
             headers: api.getHeaders(),
             body: JSON.stringify(productDTO)
@@ -231,7 +247,6 @@ const api = {
         return await response.json();
     },
 
-
     getDriverProfile: async (id) => {
         const response = await fetch(`${API_BASE}/delivery/${id}`, { 
             headers: api.getHeaders() 
@@ -239,7 +254,6 @@ const api = {
         if (!response.ok) throw new Error('Failed to load profile');
         return await response.json();
     },
-
     
     getStaffProfile: async (staffId) => {
         const response = await fetch(`${API_BASE}/staff/${staffId}`, {
