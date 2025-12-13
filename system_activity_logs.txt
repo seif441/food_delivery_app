@@ -30,3 +30,4 @@
 [2025-12-13 20:33:26] ORDER_DELIVERED | Order ID: 34 delivered successfully by Rawan Driver
 [2025-12-13 20:35:15] LOGIN           | User: Driver | Role: DELIVERY_STAFF | Action: Logged In
 [2025-12-13 20:35:24] ORDER_DELIVERED | Order ID: 30 delivered successfully by Driver
+[2025-12-13 21:45:38] LOGIN           | User: System Administrator | Role: ADMIN | Action: Logged In
