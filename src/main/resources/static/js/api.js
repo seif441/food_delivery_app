@@ -231,6 +231,22 @@ const api = {
         return await response.json();
     },
 
+    // Update existing product
+    updateProduct: async (id, productData) => {
+        const response = await fetch(`${API_BASE}/products/update/${id}`, {
+            method: 'PUT',
+            headers: api.getHeaders(),
+            body: JSON.stringify(productData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to update product');
+        }
+        return await response.json();
+    },
+
+// ...
 
     getDriverProfile: async (id) => {
         const response = await fetch(`${API_BASE}/delivery/${id}`, { 

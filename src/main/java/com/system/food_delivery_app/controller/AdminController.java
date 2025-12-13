@@ -114,4 +114,6 @@ public class AdminController {
     public ResponseEntity<Product> setAvailability(@PathVariable Long productId, @RequestParam boolean available) {
         return ResponseEntity.ok(service.setAvailability(productId, available));
     }
+
+
 }

@@ -93,4 +93,11 @@ public class ProductService {
         }
         productRepository.deleteById(id);
     }
+    public Product toggleAvailability(Long id) {
+    return productRepository.findById(id).map(product -> {
+        // Flip the boolean value
+        product.setAvailable(!product.isAvailable());
+        return productRepository.save(product);
+    }).orElseThrow(() -> new RuntimeException("Product not found with ID: " + id));
+}
 }

@@ -103,13 +103,59 @@ async function deleteCategory(id) {
 
 // --- Add Product ---
 function openProductModal(catId, catName) {
-    // Set hidden ID
+    // Clear the Hidden ID (Important!)
+    const pIdInput = document.getElementById('pId');
+    if (pIdInput) pIdInput.value = ''; 
+
+    // Set Category info
     const catInput = document.getElementById('pCategoryId');
     if(catInput) catInput.value = catId;
     
-    // Set Title
     const title = document.getElementById('targetCategoryName');
-    if(title) title.innerText = catName;
+    if(title) title.innerText = "Add to " + catName;
+
+    // Clear form fields
+    document.getElementById('pName').value = ''; 
+    document.getElementById('pPrice').value = '';
+    document.getElementById('pImg').value = '';
+    if(document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
+    
+    // Reset Checkbox
+    const availableCheckbox = document.getElementById('pAvailable');
+    if(availableCheckbox) availableCheckbox.checked = true;
+
+    // Update Button Text
+    const submitBtn = document.querySelector('#productModal button[type="submit"]');
+    if(submitBtn) submitBtn.innerText = "Add Product";
+
+    document.getElementById('productModal').style.display = 'flex';
+}
+
+function openEditProductModal(product) {
+    // Set the Hidden ID (So submit knows to update)
+    const pIdInput = document.getElementById('pId');
+    if (pIdInput) pIdInput.value = product.id;
+
+    // Fill the fields
+    document.getElementById('pName').value = product.name;
+    document.getElementById('pPrice').value = product.price;
+    document.getElementById('pImg').value = product.imageUrl;
+    if(document.getElementById('pDesc')) document.getElementById('pDesc').value = product.description || '';
+
+    // Set Category
+    const catInput = document.getElementById('pCategoryId');
+    if(catInput && product.category) catInput.value = product.category.id;
+
+    // Set Checkbox
+    const availableCheckbox = document.getElementById('pAvailable');
+    if(availableCheckbox) availableCheckbox.checked = product.available;
+
+    // Change Title and Button Text
+    const title = document.getElementById('targetCategoryName');
+    if(title) title.innerText = "Edit Product";
+
+    const submitBtn = document.querySelector('#productModal button[type="submit"]');
+    if(submitBtn) submitBtn.innerText = "Update Product";
 
     document.getElementById('productModal').style.display = 'flex';
 }
@@ -117,28 +163,37 @@ function openProductModal(catId, catName) {
 async function handleProductSubmit(e) {
     e.preventDefault();
 
+    // Check if we have an ID (If yes, we are editing. If no, we are adding)
+    const productId = document.getElementById('pId') ? document.getElementById('pId').value : null;
+
+    const availableCheckbox = document.getElementById('pAvailable');
+
     const productData = {
         name: document.getElementById('pName').value,
+        description: document.getElementById('pDesc') ? document.getElementById('pDesc').value : "",
         price: parseFloat(document.getElementById('pPrice').value),
         imageUrl: document.getElementById('pImg').value,
         categoryId: parseInt(document.getElementById('pCategoryId').value),
-        available: true
+        available: availableCheckbox ? availableCheckbox.checked : true 
     };
 
     try {
-        // UPDATE: Use api.js wrapper
-        await api.addProduct(productData);
+        if (productId) {
+            // --- UPDATE MODE ---
+            await api.updateProduct(productId, productData);
+            alert("Product Updated!");
+        } else {
+            // --- ADD MODE ---
+            await api.addProduct(productData);
+            alert("Product Added!");
+        }
         
         closeModal('productModal');
-        // Clear form
-        document.getElementById('pName').value = ''; 
-        document.getElementById('pPrice').value = '';
-        document.getElementById('pImg').value = '';
-        loadMenuByCategory();
-        alert("Product Added!");
+        loadMenuByCategory(); // Refresh the grid
+        
     } catch (error) {
         console.error(error);
-        alert("Error adding product: " + error.message);
+        alert("Error saving product: " + error.message);
     }
 }
 
@@ -164,6 +219,24 @@ async function loadCategoriesForSelect() {
         option.text = c.description || c.name;
         select.appendChild(option);
     });
+}
+
+async function toggleAvailability(id) {
+    try {
+        // Call the new endpoint
+        const response = await fetch(`/api/products/${id}/toggle-availability`, {
+            method: 'PUT',
+            headers: api.getHeaders()
+        });
+
+        if (!response.ok) throw new Error("Failed to toggle status");
+        
+        // Reload the menu to see the change
+        loadMenuByCategory();
+    } catch (error) {
+        console.error(error);
+        alert("Error updating status");
+    }
 }
 
 
