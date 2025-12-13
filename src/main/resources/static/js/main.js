@@ -8,7 +8,8 @@ let state = {
     products: [],      // Stores loaded products
     categories: [],    // Stores loaded categories
     addresses: [],     // Store user addresses
-    pendingAction: null // To store 'checkout' intent when forced to add address
+    pendingAction: null, // To store 'checkout' intent when forced to add address
+    activeCategory: 'all'
 };
 
 // --- Initialization ---
@@ -156,52 +157,80 @@ function logout() {
 // 3. DATA LOADING (MENU)
 // ==========================================
 
+// src/main/resources/static/js/main.js
+
 async function loadCategories() {
     try {
-        const categories = await api.getAllCategories();
-        state.categories = categories;
+        // Use cached categories if we have them to prevent flickering/re-fetching
+        if (state.categories.length === 0) {
+            state.categories = await api.getAllCategories();
+        }
+        
         const rail = document.getElementById('category-rail');
         if(!rail) return;
+
+        // Define Styles
+        const activeDiv = "bg-orange-500 text-white shadow-orange-200";
+        const inactiveDiv = "bg-white border border-gray-100 group-hover:bg-orange-50";
+        
+        const activeText = "text-orange-600";
+        const inactiveText = "text-gray-600 group-hover:text-orange-600";
 
         // Render Category Buttons
         rail.innerHTML = `
             <button onclick="loadProducts('all')" class="flex flex-col items-center gap-3 min-w-[80px] group">
-                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-orange-500 text-white shadow-orange-200">🍽️</div>
-                <span class="text-xs font-bold text-orange-600">All</span>
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-colors ${state.activeCategory === 'all' ? activeDiv : inactiveDiv}">🍽️</div>
+                <span class="text-xs font-bold ${state.activeCategory === 'all' ? activeText : inactiveText}">All</span>
             </button>
-            ${categories.map(cat => `
+
+            ${state.categories.map(cat => `
                 <button onclick="loadProducts(${cat.id})" class="flex flex-col items-center gap-3 min-w-[80px] group">
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-white border border-gray-100 group-hover:bg-orange-50">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-colors ${state.activeCategory === cat.id ? activeDiv : inactiveDiv}">
                         ${cat.icon || '🥘'}
                     </div>
-                    <span class="text-xs font-bold text-gray-600 group-hover:text-orange-600">${cat.name}</span>
+                    <span class="text-xs font-bold ${state.activeCategory === cat.id ? activeText : inactiveText}">${cat.name}</span>
                 </button>
             `).join('')}
         `;
     } catch(e) { console.error("Error loading categories:", e); }
 }
 
+// src/main/resources/static/js/main.js
+
+// src/main/resources/static/js/main.js
+
 async function loadProducts(catId) {
+    // 1. Update Active State & Re-render Rail
+    state.activeCategory = catId;
+    loadCategories(); 
+
     const grid = document.getElementById('products-grid');
     if (!grid) return;
     
-    // Show Loading Spinner
-    grid.innerHTML = '<div class="col-span-full text-center py-10"><div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto"></div></div>';
+    // Keep the spinner, it tells the user something is happening
+    grid.innerHTML = `
+        <div class="col-span-full flex justify-center items-center h-full">
+            <div class="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+        </div>
+`;
     
     try {
-        // Fetch Data
         const products = catId === 'all' ? await api.getAllProducts() : await api.getProductsByCategory(catId);
         state.products = products;
         
-        // Handle Empty State
         if(products.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-gray-400">No items found.</div>';
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 animate-fade-in">No items found.</div>';
             return;
         }
 
-        // Render Product Cards
-        grid.innerHTML = products.map(p => `
-            <div onclick="openDetailModal(${p.id})" class="group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1">
+        // === CHANGE STARTS HERE ===
+        // We added 'index' to the map function to calculate delay
+        grid.innerHTML = products.map((p, index) => `
+            <div 
+                onclick="openDetailModal(${p.id})" 
+                style="animation-delay: ${index * 100}ms; animation-fill-mode: both;"
+                class="animate-slide-up group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1"
+            >
                 <div class="relative h-48 rounded-2xl overflow-hidden bg-gray-100">
                     <img src="${p.imageUrl || 'https://placehold.co/400'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://placehold.co/400'">
                     ${!p.available ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold">SOLD OUT</div>' : ''}
@@ -218,6 +247,8 @@ async function loadProducts(catId) {
                 </div>
             </div>
         `).join('');
+        // === CHANGE ENDS HERE ===
+
         lucide.createIcons();
     } catch(e) { console.error("Error loading products:", e); }
 }
