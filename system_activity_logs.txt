@@ -1,0 +1,36 @@
+[2025-12-13 07:34:39] LOGIN           | User: seif (CUSTOMER)
+[2025-12-13 07:35:08] ORDER_PLACED    | Order ID: 104 placed by null | Total: $32.99
+[2025-12-13 07:35:46] LOGIN           | User: System Administrator (ADMIN)
+[2025-12-13 07:36:37] LOGIN           | User: shady (STAFF)
+[2025-12-13 07:36:52] KITCHEN_READY   | Order ID: 103 is prepared. Searching for driver...
+[2025-12-13 07:36:52] DRIVER_BUSY     | Order ID: 103 is waiting. No drivers available.
+[2025-12-13 07:38:04] KITCHEN_READY   | Order ID: 104 is prepared. Searching for driver...
+[2025-12-13 07:38:04] DRIVER_BUSY     | Order ID: 104 is waiting. No drivers available.
+[2025-12-13 07:38:43] LOGIN           | User: System Administrator (ADMIN)
+[2025-12-13 07:39:30] LOGIN           | User: ramez (DELIVERY_STAFF)
+[2025-12-13 07:39:34] DRIVER_ASSIGNED | Order ID: 101 assigned to Driver: ramez
+[2025-12-13 07:39:39] DRIVER_ASSIGNED | Order ID: 103 assigned to Driver: ramez
+[2025-12-13 07:39:50] DRIVER_ASSIGNED | Order ID: 104 assigned to Driver: ramez
+[2025-12-13 07:41:02] LOGIN           | User: Rawan Salah (CUSTOMER)
+[2025-12-13 07:41:17] ORDER_PLACED    | Order ID: 105 placed by null | Total: $26.980000000000004
+[2025-12-13 07:41:37] LOGIN           | User: shady (STAFF)
+[2025-12-13 07:41:46] KITCHEN_READY   | Order ID: 105 is prepared. Searching for driver...
+[2025-12-13 07:41:46] DRIVER_ASSIGNED | Order ID: 105 assigned to Driver: ramez
+[2025-12-13 07:42:09] LOGIN           | User: ramez (DELIVERY_STAFF)
+[2025-12-13 07:47:33] LOGIN           | User: Rawan Salah (CUSTOMER)
+[2025-12-13 07:47:48] ORDER_PLACED    | Order ID: 106 placed by null | Total: $21.480000000000004
+[2025-12-13 07:48:07] LOGIN           | User: shady (STAFF)
+[2025-12-13 07:48:22] KITCHEN_READY   | Order ID: 106 is prepared. Requesting driver assignment...
+[2025-12-13 07:48:24] DRIVER_ASSIGNED | Order ID: 106 assigned to Driver: ramez
+[2025-12-13 07:48:53] LOGIN           | User: ramez (DELIVERY_STAFF)
+[2025-12-13 07:52:54] LOGIN           | User: Rawan Salah (CUSTOMER)
+[2025-12-13 07:53:02] ORDER_PLACED    | Order ID: 107 placed by null | Total: $21.480000000000004
+[2025-12-13 07:53:14] ORDER_PLACED    | Order ID: 108 placed by null | Total: $62.99
+[2025-12-13 07:53:35] LOGIN           | User: shady (STAFF)
+[2025-12-13 07:53:50] KITCHEN_READY   | Order ID: 107 is prepared. Requesting driver assignment...
+[2025-12-13 07:53:51] DRIVER_ASSIGNED | Order ID: 107 assigned to Driver: ramez
+[2025-12-13 07:56:28] LOGIN           | User: shady (STAFF)
+[2025-12-13 07:57:06] KITCHEN_READY   | Order ID: 108 is prepared. Requesting driver assignment...
+[2025-12-13 07:57:07] DRIVER_BUSY     | Order ID: 108 is waiting. No drivers available.
+[2025-12-13 07:57:22] LOGIN           | User: ramez (DELIVERY_STAFF)
+[2025-12-13 07:57:29] DRIVER_ASSIGNED | Order ID: 108 assigned to Driver: ramez

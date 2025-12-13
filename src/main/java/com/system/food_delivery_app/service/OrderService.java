@@ -21,6 +21,9 @@ public class OrderService {
 
     @Autowired
     private DeliveryStaffRepository deliveryStaffRepository;
+    
+    @Autowired
+    private TrackingService trackingService; // Tracking Service is injected
 
     private static final double DELIVERY_FEE = 2.99;
 
@@ -47,39 +50,51 @@ public class OrderService {
         }
         order.setTotalPrice(itemsTotal + DELIVERY_FEE);
 
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        
+        String customerName = (savedOrder.getCustomer() != null) ? savedOrder.getCustomer().getName() : "Unknown";
+        trackingService.logEvent("ORDER_PLACED", 
+            "Order ID: " + savedOrder.getId() + " placed by " + customerName + " | Total: $" + savedOrder.getTotalPrice());
+
+        return savedOrder;
     }
 
     @Transactional
     public Order staffMarkAsPrepared(Long orderId) {
         Order order = getOrderById(orderId);
         
-        // Fix: Idempotency check (if already prepared, just attempt assignment)
         if(order.getStatus() != OrderStatus.OUT_FOR_DELIVERY && order.getStatus() != OrderStatus.DELIVERED) {
             order.setStatus(OrderStatus.PREPARED);
-            orderRepository.save(order); // Save state first
-            assignDriverAutomatically(order); // Try to find driver
+            orderRepository.save(order);
+            
+            // Log 1: KITCHEN READY
+            trackingService.logEvent("KITCHEN_READY", 
+                "Order ID: " + orderId + " is prepared. Requesting driver assignment...");
+            
+            // --- FIX 1: Add artificial delay to separate timestamps ---
+            try { Thread.sleep(1000); } catch (InterruptedException e) {}
+
+            assignDriverAutomatically(order); 
         }
         return order;
     }
 
-    // Called when Kitchen finishes food
     public void assignDriverAutomatically(Order order) {
         Optional<DeliveryStaff> driverOpt = deliveryStaffRepository.findFirstByIsAvailableTrue();
         if (driverOpt.isPresent()) {
             assignOrderToSpecificDriver(order, driverOpt.get());
+        } else {
+            trackingService.logEvent("DRIVER_BUSY", 
+                "Order ID: " + order.getId() + " is waiting. No drivers available.");
         }
     }
 
-    // NEW: Called when a Driver goes Online
     public void checkAndAssignWaitingOrders(DeliveryStaff driver) {
-        // Find oldest order that is PREPARED but has NO driver
         List<Order> waitingOrders = orderRepository.findByStatus(OrderStatus.PREPARED);
-        
         for(Order order : waitingOrders) {
             if(order.getDeliveryStaff() == null) {
                 assignOrderToSpecificDriver(order, driver);
-                break; // Assign one and stop (since driver is now busy)
+                break;
             }
         }
     }
@@ -87,10 +102,14 @@ public class OrderService {
     private void assignOrderToSpecificDriver(Order order, DeliveryStaff driver) {
         order.setDeliveryStaff(driver);
         order.setStatus(OrderStatus.OUT_FOR_DELIVERY);
-        driver.setAvailable(false); // Driver becomes busy
+        driver.setAvailable(false);
         
         deliveryStaffRepository.save(driver);
         orderRepository.save(order);
+        
+        // Log 2: DRIVER ASSIGNED
+        trackingService.logEvent("DRIVER_ASSIGNED", 
+            "Order ID: " + order.getId() + " assigned to Driver: " + driver.getName());
     }
 
     @Transactional
@@ -98,6 +117,8 @@ public class OrderService {
         Order order = getOrderById(orderId);
         if (order.getStatus() == OrderStatus.PENDING) {
             orderRepository.delete(order); 
+            trackingService.logEvent("ORDER_CANCELLED", 
+                "Order ID: " + orderId + " was cancelled by customer.");
         } else {
             throw new RuntimeException("Cannot cancel order in progress.");
         }
@@ -115,9 +136,32 @@ public class OrderService {
         return orderRepository.findByCustomerId(customerId);
     }
 
+    // --- FIX 2: Ensures DELIVERY log and logic run correctly ---
     public Order updateStatus(Long orderId, OrderStatus status) {
         Order order = getOrderById(orderId);
+        OrderStatus oldStatus = order.getStatus();
         order.setStatus(status);
+        
+        // Handle delivery completion
+        if (status == OrderStatus.DELIVERED) {
+            
+            // If delivered, set the driver to available
+            if (order.getDeliveryStaff() != null) {
+                DeliveryStaff driver = order.getDeliveryStaff();
+                driver.setAvailable(true);
+                deliveryStaffRepository.save(driver);
+            }
+            
+            // Log specifically for delivery (Guaranteed to run if status is DELIVERED)
+            String driverName = order.getDeliveryStaff() != null ? order.getDeliveryStaff().getName() : "System";
+            trackingService.logEvent("ORDER_DELIVERED", 
+                "Order ID: " + orderId + " was delivered by " + driverName);
+        } else {
+             // General status update log for all other changes
+            trackingService.logEvent("STATUS_UPDATE", 
+                "Order ID: " + orderId + " changed from " + oldStatus + " to " + status);
+        }
+            
         return orderRepository.save(order);
     }
 }
