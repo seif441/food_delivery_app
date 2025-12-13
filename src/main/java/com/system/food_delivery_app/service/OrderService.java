@@ -1,10 +1,12 @@
 package com.system.food_delivery_app.service;
 
+import com.system.food_delivery_app.model.Customer; // Import Customer
 import com.system.food_delivery_app.model.DeliveryStaff;
 import com.system.food_delivery_app.model.Order;
 import com.system.food_delivery_app.model.OrderStatus;
 import com.system.food_delivery_app.repository.DeliveryStaffRepository;
 import com.system.food_delivery_app.repository.OrderRepository;
+import com.system.food_delivery_app.repository.UserRepository; // 1. Import UserRepository
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,9 +23,9 @@ public class OrderService {
 
     @Autowired
     private DeliveryStaffRepository deliveryStaffRepository;
-    
+
     @Autowired
-    private TrackingService trackingService; // Tracking Service is injected
+    private UserRepository userRepository; // 2. Inject UserRepository
 
     private static final double DELIVERY_FEE = 2.99;
 
@@ -32,9 +34,19 @@ public class OrderService {
         if (order.getItems() == null || order.getItems().isEmpty()) {
             throw new RuntimeException("Cannot place an empty order.");
         }
+        
+        // --- FIX STARTS HERE ---
+        // 3. Validate and Fetch the full Customer entity
         if (order.getCustomer() == null || order.getCustomer().getId() == null) {
-            throw new RuntimeException("Order must have a valid Customer.");
+            throw new RuntimeException("Order must have a valid Customer ID.");
         }
+
+        // We fetch the real customer from the DB so we have the Name and Email loaded
+        Customer fullCustomer = (Customer) userRepository.findById(order.getCustomer().getId())
+                .orElseThrow(() -> new RuntimeException("Customer not found in database"));
+        
+        order.setCustomer(fullCustomer); 
+        // --- FIX ENDS HERE ---
 
         for (var item : order.getItems()) {
             item.setOrder(order);
@@ -50,13 +62,7 @@ public class OrderService {
         }
         order.setTotalPrice(itemsTotal + DELIVERY_FEE);
 
-        Order savedOrder = orderRepository.save(order);
-        
-        String customerName = (savedOrder.getCustomer() != null) ? savedOrder.getCustomer().getName() : "Unknown";
-        trackingService.logEvent("ORDER_PLACED", 
-            "Order ID: " + savedOrder.getId() + " placed by " + customerName + " | Total: $" + savedOrder.getTotalPrice());
-
-        return savedOrder;
+        return orderRepository.save(order);
     }
 
     @Transactional
@@ -67,13 +73,6 @@ public class OrderService {
             order.setStatus(OrderStatus.PREPARED);
             orderRepository.save(order);
             
-            // Log 1: KITCHEN READY
-            trackingService.logEvent("KITCHEN_READY", 
-                "Order ID: " + orderId + " is prepared. Requesting driver assignment...");
-            
-            // --- FIX 1: Add artificial delay to separate timestamps ---
-            try { Thread.sleep(1000); } catch (InterruptedException e) {}
-
             assignDriverAutomatically(order); 
         }
         return order;
@@ -83,10 +82,7 @@ public class OrderService {
         Optional<DeliveryStaff> driverOpt = deliveryStaffRepository.findFirstByIsAvailableTrue();
         if (driverOpt.isPresent()) {
             assignOrderToSpecificDriver(order, driverOpt.get());
-        } else {
-            trackingService.logEvent("DRIVER_BUSY", 
-                "Order ID: " + order.getId() + " is waiting. No drivers available.");
-        }
+        } 
     }
 
     public void checkAndAssignWaitingOrders(DeliveryStaff driver) {
@@ -106,10 +102,6 @@ public class OrderService {
         
         deliveryStaffRepository.save(driver);
         orderRepository.save(order);
-        
-        // Log 2: DRIVER ASSIGNED
-        trackingService.logEvent("DRIVER_ASSIGNED", 
-            "Order ID: " + order.getId() + " assigned to Driver: " + driver.getName());
     }
 
     @Transactional
@@ -117,8 +109,6 @@ public class OrderService {
         Order order = getOrderById(orderId);
         if (order.getStatus() == OrderStatus.PENDING) {
             orderRepository.delete(order); 
-            trackingService.logEvent("ORDER_CANCELLED", 
-                "Order ID: " + orderId + " was cancelled by customer.");
         } else {
             throw new RuntimeException("Cannot cancel order in progress.");
         }
@@ -136,32 +126,17 @@ public class OrderService {
         return orderRepository.findByCustomerId(customerId);
     }
 
-    // --- FIX 2: Ensures DELIVERY log and logic run correctly ---
     public Order updateStatus(Long orderId, OrderStatus status) {
         Order order = getOrderById(orderId);
-        OrderStatus oldStatus = order.getStatus();
         order.setStatus(status);
         
-        // Handle delivery completion
         if (status == OrderStatus.DELIVERED) {
-            
-            // If delivered, set the driver to available
             if (order.getDeliveryStaff() != null) {
                 DeliveryStaff driver = order.getDeliveryStaff();
                 driver.setAvailable(true);
                 deliveryStaffRepository.save(driver);
             }
-            
-            // Log specifically for delivery (Guaranteed to run if status is DELIVERED)
-            String driverName = order.getDeliveryStaff() != null ? order.getDeliveryStaff().getName() : "System";
-            trackingService.logEvent("ORDER_DELIVERED", 
-                "Order ID: " + orderId + " was delivered by " + driverName);
-        } else {
-             // General status update log for all other changes
-            trackingService.logEvent("STATUS_UPDATE", 
-                "Order ID: " + orderId + " changed from " + oldStatus + " to " + status);
         }
-            
         return orderRepository.save(order);
     }
 }

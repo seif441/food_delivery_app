@@ -8,6 +8,7 @@ let state = {
     products: [],
     staff: [],      
     orders: [],
+    logs: [],
     
     // Stats (Will be calculated from real data)
     stats: [
@@ -31,11 +32,12 @@ document.addEventListener('DOMContentLoaded', () => {
 async function loadAllData() {
     try {
         // Fetch ALL data in parallel
-        const [cats, prods, users, orders] = await Promise.all([
+        const [cats, prods, users, orders, logs] = await Promise.all([
             api.getAllCategories(),
             api.getAllProducts(),
             api.getAllUsers(),
-            api.getAllOrders()
+            api.getAllOrders(),
+            api.getSystemLogs()
         ]);
 
         // 1. Setup Menu Data
@@ -64,6 +66,7 @@ async function loadAllData() {
 
         // 3. Setup Orders Data & Calculate Stats
         state.orders = orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)); // Newest first
+        state.logs = logs;
         calculateStats();
 
     } catch (e) { 
@@ -122,17 +125,25 @@ function renderSidebar() {
 }
 
 function renderHeader() {
-    const titles = { dashboard: 'Dashboard Overview', menu: 'Menu Management', orders: 'All Orders', staff: 'Team Members' };
+    const titles = { dashboard: 'Dashboard Overview', menu: 'Menu Management', orders: 'All Orders', staff: 'Team Members', tracking: 'System Activity Logs' };
     document.getElementById('header-title').innerHTML = `<h2 class="text-xl md:text-2xl font-bold text-gray-900">${titles[state.activeTab]}</h2>`;
 
     const actionsDiv = document.getElementById('header-actions');
     let actionHtml = '';
 
+    // --- BUTTON LOGIC STARTS HERE ---
     if (state.activeTab === 'menu') {
         actionHtml = `<button onclick="openModal('addCategory')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center space-x-2 shadow-lg shadow-slate-900/20 transition-all text-sm md:text-base"><i data-lucide="folder-plus" class="w-4 h-4 md:w-5 md:h-5"></i><span class="font-medium hidden md:inline">New Category</span></button>`;
-    } else if (state.activeTab === 'staff') {
+    } 
+    else if (state.activeTab === 'staff') {
         actionHtml = `<button onclick="openModal('addStaff')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl flex items-center space-x-2 shadow-lg shadow-orange-600/20 transition-all text-sm md:text-base"><i data-lucide="user-plus" class="w-4 h-4 md:w-5 md:h-5"></i><span class="font-medium hidden md:inline">Add Employee</span></button>`;
+    } 
+    // *** PUT YOUR NEW CODE HERE ***
+    else if (state.activeTab === 'tracking') {
+        actionHtml = `<button onclick="loadAllData()" class="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-xl flex items-center space-x-2 shadow-sm transition-all"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="font-medium">Refresh Logs</span></button>`;
     }
+
+    // This adds the "AD" circle to the end of whatever button was created above
     actionHtml += `<div class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200">AD</div>`;
     actionsDiv.innerHTML = actionHtml;
 }
@@ -143,6 +154,7 @@ function renderMainContent() {
     else if (state.activeTab === 'menu') container.innerHTML = getMenuHtml();
     else if (state.activeTab === 'orders') container.innerHTML = getOrdersHtml();
     else if (state.activeTab === 'staff') container.innerHTML = getStaffHtml();
+    else if (state.activeTab === 'tracking') container.innerHTML = getTrackingHtml(); // <--- ADD THIS
 }
 
 function getDashboardHtml() {
@@ -361,7 +373,117 @@ function getOrdersHtml() {
         </div>`;
     }).join('')}</div>`;
 }
+function getTrackingHtml() {
+    if (!state.logs || state.logs.length === 0) {
+        return `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
+            <div class="bg-gray-50 p-4 rounded-full inline-block mb-4"><i data-lucide="activity" class="w-8 h-8 text-gray-300"></i></div>
+            <h3 class="text-lg font-medium text-gray-500">No system activity recorded yet.</h3>
+        </div>`;
+    }
 
+    const rows = state.logs.map(log => {
+        // --- 1. Badge Logic (Action Type) ---
+        let badgeColor = 'bg-gray-100 text-gray-600';
+        let icon = 'info';
+
+        if (log.action === 'LOGIN') { badgeColor = 'bg-blue-50 text-blue-600 border border-blue-100'; icon = 'log-in'; }
+        else if (log.action === 'ORDER_PLACED') { badgeColor = 'bg-emerald-50 text-emerald-600 border border-emerald-100'; icon = 'shopping-cart'; }
+        else if (log.action.includes('KITCHEN')) { badgeColor = 'bg-orange-50 text-orange-600 border border-orange-100'; icon = 'chef-hat'; }
+        else if (log.action.includes('DRIVER')) { badgeColor = 'bg-purple-50 text-purple-600 border border-purple-100'; icon = 'truck'; }
+        else if (log.action === 'ORDER_DELIVERED') { badgeColor = 'bg-teal-50 text-teal-600 border border-teal-100'; icon = 'check-circle'; }
+        else if (log.action === 'ORDER_CANCELLED') { badgeColor = 'bg-red-50 text-red-600 border border-red-100'; icon = 'x-circle'; }
+
+        // --- 2. Parsing Logic (Split 'Details') ---
+        let user = 'System';
+        let role = '-';
+        let desc = log.details;
+
+        if (log.action === 'LOGIN') {
+            const parts = log.details.split('|');
+            if (parts.length >= 2) {
+                user = parts[0].replace('User:', '').trim();
+                role = parts[1].replace('Role:', '').trim();
+                desc = 'Session started successfully';
+            }
+        } 
+        else if (log.action === 'ORDER_PLACED') {
+            const match = log.details.match(/placed by (.*?) \|/);
+            if (match) user = match[1].trim();
+            role = 'CUSTOMER';
+            desc = log.details.replace(`placed by ${user} |`, ''); 
+        }
+        else if (log.action.includes('KITCHEN')) {
+            user = 'Kitchen Staff';
+            role = 'STAFF';
+        }
+        else if (log.action === 'DRIVER_ASSIGNED') {
+            const parts = log.details.split('Driver:');
+            if (parts.length > 1) user = parts[1].trim();
+            role = 'DELIVERY_STAFF';
+            desc = parts[0].replace('assigned to', '').trim();
+        }
+        else if (log.action === 'ORDER_DELIVERED') {
+            const parts = log.details.split('by');
+            if (parts.length > 1) user = parts[1].trim();
+            role = 'DELIVERY_STAFF';
+            desc = 'Delivery Completed';
+        }
+        else if (log.action === 'ORDER_CANCELLED') {
+            user = 'Customer';
+            role = 'CUSTOMER';
+        }
+
+        // --- 3. Role Color Logic (NEW) ---
+        let roleBadgeClass = 'bg-gray-100 text-gray-600 border-gray-200'; // Default
+
+        if (role === 'ADMIN') {
+            roleBadgeClass = 'bg-rose-100 text-rose-700 border-rose-200'; // Red for Admin
+        } else if (role === 'CUSTOMER') {
+            roleBadgeClass = 'bg-sky-100 text-sky-700 border-sky-200';    // Blue for Customer
+        } else if (role === 'STAFF') {
+            roleBadgeClass = 'bg-orange-100 text-orange-700 border-orange-200'; // Orange for Kitchen
+        } else if (role === 'DELIVERY_STAFF') {
+            roleBadgeClass = 'bg-violet-100 text-violet-700 border-violet-200'; // Purple for Driver
+        }
+
+        // --- 4. Render Row ---
+        return `<tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <td class="p-4 whitespace-nowrap text-xs text-gray-400 font-mono">${log.timestamp}</td>
+            <td class="p-4">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${badgeColor}">
+                    <i data-lucide="${icon}" class="w-3 h-3"></i> ${log.action}
+                </span>
+            </td>
+            <td class="p-4">
+                <div class="font-bold text-sm text-gray-800">${user}</div>
+            </td>
+            <td class="p-4">
+                 <span class="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded border ${roleBadgeClass}">${role}</span>
+            </td>
+            <td class="p-4 text-sm text-gray-600 truncate max-w-xs" title="${desc}">${desc}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden animate-fade-in-up">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Time</th>
+                        <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-40">Type</th>
+                        <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-40">User / Agent</th>
+                        <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider w-32">Role</th>
+                        <th class="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Activity Details</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+    </div>`;
+}
 function getStatusColor(status) {
     switch(status) {
         case 'PENDING': return 'bg-yellow-100 text-yellow-700';

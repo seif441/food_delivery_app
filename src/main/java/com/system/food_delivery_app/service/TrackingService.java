@@ -11,12 +11,9 @@ import java.time.format.DateTimeFormatter;
 @Service
 public class TrackingService {
 
-    private static final String LOG_FILE_PATH = "system_activity_logs.txt"; // Renamed for general purpose
+    private static final String LOG_FILE_PATH = "system_activity_logs.txt"; 
 
-    /**
-     * Generic method to log ANY event.
-     * Format: [TIMESTAMP] ACTION | Details
-     */
+    // Used by the AOP Aspect
     public void logEvent(String action, String details) {
         try {
             File file = new File(LOG_FILE_PATH);
@@ -30,15 +27,11 @@ public class TrackingService {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
                 writer.write(logEntry);
             }
-            System.out.println("Tracking: " + action + " - " + details);
+            // Optional: Print to console for development visibility
+            System.out.println("AOP Log: " + action + " - " + details);
 
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    // Keep this for backward compatibility with your UserService
-    public void logLogin(String username, String role) {
-        logEvent("LOGIN", "User: " + username + " (" + role + ")");
     }
 }

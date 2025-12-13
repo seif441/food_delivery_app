@@ -1,15 +1,20 @@
 package com.system.food_delivery_app.service;
 
-import com.system.food_delivery_app.model.DeliveryStaff;
-import com.system.food_delivery_app.model.Product;
-import com.system.food_delivery_app.model.Role;
-import com.system.food_delivery_app.model.Staff;
-import com.system.food_delivery_app.model.User;
-import com.system.food_delivery_app.repository.ProductRepository;
-import com.system.food_delivery_app.repository.StaffRepository;
-import com.system.food_delivery_app.repository.UserRepository;
+import com.system.food_delivery_app.model.*;
+import com.system.food_delivery_app.repository.*;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 @Service
@@ -18,6 +23,7 @@ public class AdminService {
     private final UserRepository userRepo;
     private final ProductRepository productRepo;
     private final StaffRepository staffRepository;
+    private static final String LOG_FILE_PATH = "system_activity_logs.txt";
     
 
     public AdminService(UserRepository userRepo, 
@@ -126,5 +132,35 @@ public class AdminService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         product.setAvailable(available);
         return productRepo.save(product);
+    }
+    public List<Map<String, String>> getSystemLogs() {
+        File file = new File(LOG_FILE_PATH);
+        if (!file.exists()) {
+            return Collections.emptyList();
+        }
+
+        List<Map<String, String>> logs = new ArrayList<>();
+        // Regex to parse: [Date Time] ACTION | Details
+        Pattern pattern = Pattern.compile("^\\[(.*?)\\]\\s+(.*?)\\s+\\|\\s+(.*)$");
+
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(LOG_FILE_PATH));
+            // Reverse to show newest first
+            Collections.reverse(lines); 
+
+            for (String line : lines) {
+                Matcher matcher = pattern.matcher(line);
+                if (matcher.find()) {
+                    Map<String, String> entry = new HashMap<>();
+                    entry.put("timestamp", matcher.group(1));
+                    entry.put("action", matcher.group(2).trim());
+                    entry.put("details", matcher.group(3));
+                    logs.add(entry);
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return logs;
     }
 }

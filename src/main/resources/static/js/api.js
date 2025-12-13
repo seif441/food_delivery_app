@@ -356,5 +356,14 @@ const api = {
         if (!response.ok) throw new Error("Failed to update status");
         return await response.json();
     },
+    // Add this to your api object in api.js
+
+    getSystemLogs: async () => {
+        const response = await fetch(`${API_BASE}/admins/logs`, { 
+            headers: api.getHeaders() 
+        });
+        if (!response.ok) return [];
+        return await response.json();
+    },
 
 };
