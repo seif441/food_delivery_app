@@ -6,7 +6,10 @@ let state = {
     cartId: null,      // Stores the ID of the cart from the database
     cartItems: [],     // Stores the array of items in the cart
     products: [],      // Stores loaded products
-    categories: []     // Stores loaded categories
+    categories: [],    // Stores loaded categories
+    addresses: [],     // Store user addresses
+    pendingAction: null, // To store 'checkout' intent when forced to add address
+    activeCategory: 'all'
 };
 
 // --- Initialization ---
@@ -18,9 +21,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     await loadCategories();
     await loadProducts('all');
     
-    // 2. Initialize Cart (if logged in)
+    // 2. Initialize Cart & Addresses (if logged in)
     if (state.user) {
         await refreshCart();
+        await loadUserAddresses();
     }
     
     // 3. Setup Global Event Listeners
@@ -28,7 +32,83 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ==========================================
-// 1. HEADER & AUTHENTICATION UI
+// 1. ADDRESS MANAGEMENT LOGIC
+// ==========================================
+
+async function loadUserAddresses() {
+    if (!state.user) return;
+    state.addresses = await api.getAddresses(state.user.id);
+    updateLocationHeader();
+}
+
+function updateLocationHeader() {
+    const btn = document.getElementById('header-address-text');
+    if (!btn) return;
+
+    if (state.addresses && state.addresses.length > 0) {
+        // Show the first address
+        const addr = state.addresses[0];
+        btn.textContent = `${addr.streetAddress}, ${addr.city}`;
+        btn.classList.remove('text-gray-400');
+        btn.classList.add('text-gray-700');
+    } else {
+        btn.textContent = "Set Location";
+        btn.classList.add('text-gray-400');
+    }
+}
+
+function openAddressModal() {
+    if (!state.user) return window.location.href = 'auth.html';
+    document.getElementById('address-modal').classList.remove('hidden');
+}
+
+function closeAddressModal() {
+    document.getElementById('address-modal').classList.add('hidden');
+}
+
+async function handleAddressSubmit(e) {
+    e.preventDefault();
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    // Construct payload for Java Entity
+    // Note: We wrap "user" object because of @ManyToOne relation
+    const payload = {
+        streetAddress: formData.get('streetAddress'),
+        city: formData.get('city'),
+        postalCode: formData.get('postalCode'),
+        additionalInfo: formData.get('additionalInfo'),
+        user: { id: state.user.id } 
+    };
+
+    const btn = form.querySelector('button[type="submit"]');
+    const originalText = btn.innerText;
+    btn.innerText = "Saving...";
+    btn.disabled = true;
+
+    try {
+        await api.createAddress(payload);
+        await loadUserAddresses(); // Refresh local state
+        closeAddressModal();
+        form.reset();
+        
+        // If we were trying to checkout, resume now
+        if (state.pendingAction === 'checkout') {
+            state.pendingAction = null;
+            openCartDrawer(); // Re-open drawer
+            handleCheckout(); // Retry checkout
+        }
+
+    } catch (err) {
+        alert("Error saving address: " + err.message);
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
+    }
+}
+
+// ==========================================
+// 2. HEADER & AUTHENTICATION UI
 // ==========================================
 
 function updateHeaderUser() {
@@ -62,9 +142,11 @@ function logout() {
     state.user = null;
     state.cartId = null;
     state.cartItems = [];
+    state.addresses = [];
     
     // Reset UI
     updateHeaderUser();
+    updateLocationHeader();
     updateCartUI();
     
     // Optional: Redirect to home
@@ -72,55 +154,83 @@ function logout() {
 }
 
 // ==========================================
-// 2. DATA LOADING (MENU)
+// 3. DATA LOADING (MENU)
 // ==========================================
+
+// src/main/resources/static/js/main.js
 
 async function loadCategories() {
     try {
-        const categories = await api.getAllCategories();
-        state.categories = categories;
+        // Use cached categories if we have them to prevent flickering/re-fetching
+        if (state.categories.length === 0) {
+            state.categories = await api.getAllCategories();
+        }
+        
         const rail = document.getElementById('category-rail');
         if(!rail) return;
+
+        // Define Styles
+        const activeDiv = "bg-orange-500 text-white shadow-orange-200";
+        const inactiveDiv = "bg-white border border-gray-100 group-hover:bg-orange-50";
+        
+        const activeText = "text-orange-600";
+        const inactiveText = "text-gray-600 group-hover:text-orange-600";
 
         // Render Category Buttons
         rail.innerHTML = `
             <button onclick="loadProducts('all')" class="flex flex-col items-center gap-3 min-w-[80px] group">
-                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-orange-500 text-white shadow-orange-200">🍽️</div>
-                <span class="text-xs font-bold text-orange-600">All</span>
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-colors ${state.activeCategory === 'all' ? activeDiv : inactiveDiv}">🍽️</div>
+                <span class="text-xs font-bold ${state.activeCategory === 'all' ? activeText : inactiveText}">All</span>
             </button>
-            ${categories.map(cat => `
+
+            ${state.categories.map(cat => `
                 <button onclick="loadProducts(${cat.id})" class="flex flex-col items-center gap-3 min-w-[80px] group">
-                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm bg-white border border-gray-100 group-hover:bg-orange-50">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-colors ${state.activeCategory === cat.id ? activeDiv : inactiveDiv}">
                         ${cat.icon || '🥘'}
                     </div>
-                    <span class="text-xs font-bold text-gray-600 group-hover:text-orange-600">${cat.name}</span>
+                    <span class="text-xs font-bold ${state.activeCategory === cat.id ? activeText : inactiveText}">${cat.name}</span>
                 </button>
             `).join('')}
         `;
     } catch(e) { console.error("Error loading categories:", e); }
 }
 
+// src/main/resources/static/js/main.js
+
+// src/main/resources/static/js/main.js
+
 async function loadProducts(catId) {
+    // 1. Update Active State & Re-render Rail
+    state.activeCategory = catId;
+    loadCategories(); 
+
     const grid = document.getElementById('products-grid');
     if (!grid) return;
     
-    // Show Loading Spinner
-    grid.innerHTML = '<div class="col-span-full text-center py-10"><div class="animate-spin w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full mx-auto"></div></div>';
+    // Keep the spinner, it tells the user something is happening
+    grid.innerHTML = `
+        <div class="col-span-full flex justify-center items-center h-full">
+            <div class="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full"></div>
+        </div>
+`;
     
     try {
-        // Fetch Data
         const products = catId === 'all' ? await api.getAllProducts() : await api.getProductsByCategory(catId);
         state.products = products;
         
-        // Handle Empty State
         if(products.length === 0) {
-            grid.innerHTML = '<div class="col-span-full text-center text-gray-400">No items found.</div>';
+            grid.innerHTML = '<div class="col-span-full text-center text-gray-400 animate-fade-in">No items found.</div>';
             return;
         }
 
-        // Render Product Cards
-        grid.innerHTML = products.map(p => `
-            <div onclick="openDetailModal(${p.id})" class="group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1">
+        // === CHANGE STARTS HERE ===
+        // We added 'index' to the map function to calculate delay
+        grid.innerHTML = products.map((p, index) => `
+            <div 
+                onclick="openDetailModal(${p.id})" 
+                style="animation-delay: ${index * 100}ms; animation-fill-mode: both;"
+                class="animate-slide-up group bg-white rounded-3xl p-3 shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer hover:-translate-y-1"
+            >
                 <div class="relative h-48 rounded-2xl overflow-hidden bg-gray-100">
                     <img src="${p.imageUrl || 'https://placehold.co/400'}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" onerror="this.src='https://placehold.co/400'">
                     ${!p.available ? '<div class="absolute inset-0 bg-black/60 flex items-center justify-center text-white font-bold">SOLD OUT</div>' : ''}
@@ -137,12 +247,14 @@ async function loadProducts(catId) {
                 </div>
             </div>
         `).join('');
+        // === CHANGE ENDS HERE ===
+
         lucide.createIcons();
     } catch(e) { console.error("Error loading products:", e); }
 }
 
 // ==========================================
-// 3. CART LOGIC (BACKEND INTEGRATED)
+// 4. CART LOGIC (BACKEND INTEGRATED)
 // ==========================================
 
 async function refreshCart() {
@@ -211,7 +323,6 @@ async function updateCartQty(productId, delta) {
 
 function updateCartUI() {
     // Calculate Totals based on current state
-    // Note: Backend 'item.price' is usually (Unit Price * Quantity).
     const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0);
     const count = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -272,6 +383,14 @@ async function handleCheckout() {
     if (!state.user) return window.location.href = 'auth.html';
     if (state.cartItems.length === 0) return alert("Your basket is empty!");
 
+    // 2. CHECK IF USER HAS ADDRESS (UPDATED LOGIC)
+    if (!state.addresses || state.addresses.length === 0) {
+        state.pendingAction = 'checkout';
+        closeCartDrawer();
+        openAddressModal();
+        return;
+    }
+
     const checkoutBtn = document.getElementById('checkout-btn');
     if(checkoutBtn) {
         checkoutBtn.disabled = true;
@@ -279,8 +398,7 @@ async function handleCheckout() {
     }
 
     try {
-        // 2. Prepare Data for Backend
-        // We calculate total locally, but backend should re-verify
+        // 3. Prepare Data for Backend
         const subtotal = state.cartItems.reduce((sum, item) => sum + item.price, 0);
         const deliveryFee = 2.99;
         
@@ -297,27 +415,26 @@ async function handleCheckout() {
             }))
         };
 
-        // 3. Send to Backend
+        // 4. Send to Backend
         console.log("Sending Order:", orderPayload); // Debugging
         const createdOrder = await api.placeOrder(orderPayload);
         console.log("Order Created:", createdOrder);
 
-        // 4. Clear Cart (Now it's safe to delete cart items)
+        // 5. Clear Cart (Now it's safe to delete cart items)
         if (state.cartId) {
             await api.clearCart(state.cartId);
         }
 
-        // 5. Success UI
+        // 6. Success UI
         closeCartDrawer();
         const overlay = document.getElementById('success-overlay');
-        // If you don't have an overlay element in HTML, just alert
         if(overlay) {
             overlay.classList.remove('hidden');
         } else {
             alert("Order Placed Successfully!");
         }
 
-        // 6. Reset State and Redirect
+        // 7. Reset State and Redirect
         state.cartItems = [];
         updateCartUI();
 
@@ -336,7 +453,7 @@ async function handleCheckout() {
 }
 
 // ==========================================
-// 4. MODALS (DETAIL & AUTH)
+// 5. MODALS (DETAIL, AUTH & ADDRESS)
 // ==========================================
 
 function openDetailModal(productId) {
@@ -434,5 +551,11 @@ function setupEventListeners() {
                 alert(err.message); 
             }
         };
+    }
+
+    // NEW: Address Form Listener
+    const addressForm = document.getElementById('address-form');
+    if(addressForm) {
+        addressForm.addEventListener('submit', handleAddressSubmit);
     }
 }

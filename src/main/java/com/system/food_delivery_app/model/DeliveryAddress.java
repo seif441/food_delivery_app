@@ -3,10 +3,10 @@ package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty; // Changed from JsonIgnore
 
 @Entity
-@Table(name = "delivery_addresses") // Table name: delivery_addresses
+@Table(name = "delivery_addresses")
 public class DeliveryAddress {
 
     @Id
@@ -14,8 +14,9 @@ public class DeliveryAddress {
     private Long id;
     
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false) 
-    @JsonIgnore 
+    @JoinColumn(name = "user_id", nullable = false)
+    // FIXED: Use WRITE_ONLY instead of JsonIgnore so we can SAVE the user ID
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) 
     private User user;
 
     @NotBlank

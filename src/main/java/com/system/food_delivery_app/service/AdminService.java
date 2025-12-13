@@ -1,5 +1,6 @@
 package com.system.food_delivery_app.service;
 
+import com.system.food_delivery_app.model.DeliveryStaff;
 import com.system.food_delivery_app.model.Product;
 import com.system.food_delivery_app.model.Role;
 import com.system.food_delivery_app.model.Staff;
@@ -29,12 +30,36 @@ public class AdminService {
 
     // --- STAFF & USER MANAGEMENT ---
 
-    // FIXED: Changed input from User to Staff. 
-    // If you pass 'User', JPA saves DTYPE='User'. 
-    // You must pass 'Staff' so JPA saves DTYPE='STAFF'.
-    public Staff addStaff(Staff staff, Role role) {
-        staff.setRole(role);
-        return staffRepository.save(staff);
+    /**
+     * FIXED: Branching logic to create the correct Entity Type based on Role.
+     * This ensures the 'dtype' column in the DB is set to 'DELIVERY_STAFF' or 'STAFF'.
+     */
+    public User addStaff(User userData, Role role) {
+        if ("DELIVERY_STAFF".equalsIgnoreCase(role.getRoleName()) || 
+            "DELIVERY".equalsIgnoreCase(role.getRoleName())) {
+            
+            // Create DELIVERY_STAFF entity
+            DeliveryStaff driver = new DeliveryStaff();
+            driver.setName(userData.getName());
+            driver.setEmail(userData.getEmail());
+            driver.setPassword(userData.getPassword());
+            driver.setPhoneNumber(userData.getPhoneNumber());
+            driver.setRole(role);
+            driver.setAvailable(false); // Explicitly set 0
+            
+            return userRepo.save(driver);
+
+        } else {
+            // Create standard STAFF entity
+            Staff staff = new Staff();
+            staff.setName(userData.getName());
+            staff.setEmail(userData.getEmail());
+            staff.setPassword(userData.getPassword());
+            staff.setPhoneNumber(userData.getPhoneNumber());
+            staff.setRole(role);
+            
+            return staffRepository.save(staff);
+        }
     }
 
     public List<Staff> getAllStaff() {
@@ -58,7 +83,7 @@ public class AdminService {
         userRepo.deleteById(userId);
     }
 
-    // --- MENU MANAGEMENT (Product Management) ---
+    // --- MENU MANAGEMENT ---
 
     public Product addMenuItem(Product product) {
         return productRepo.save(product);
@@ -74,7 +99,6 @@ public class AdminService {
         product.setAvailable(updated.isAvailable());
         product.setImageUrl(updated.getImageUrl());
         
-        // If category needs updating, handle it here too
         if (updated.getCategory() != null) {
             product.setCategory(updated.getCategory());
         }
