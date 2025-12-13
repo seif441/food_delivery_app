@@ -74,7 +74,7 @@ const api = {
         return await response.json();
     },
 
-    // UPDATED: Now accepts and sends 'icon'
+    // MERGED: Sends 'name', 'description' (for DB compatibility), and 'icon'
     addCategory: async (name, icon) => {
         const response = await fetch(`${API_BASE}/categories/add`, {
             method: 'POST',
@@ -82,11 +82,19 @@ const api = {
             body: JSON.stringify({ 
                 name: name, 
                 description: name, 
-                icon: icon || '🍽️' // Send icon to backend
+                icon: icon || '🍽️' 
             }) 
         });
         if (!response.ok) throw new Error("Failed to add category");
         return await response.json();
+    },
+
+    deleteCategory: async (id) => {
+        const response = await fetch(`${API_BASE}/categories/delete/${id}`, {
+            method: 'DELETE',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to delete category");
     },
 
     getAllProducts: async () => {
@@ -101,9 +109,52 @@ const api = {
         return await response.json();
     },
 
+    addProduct: async (productDTO) => {
+        const response = await fetch(`${API_BASE}/products/add`, {
+            method: 'POST',
+            headers: api.getHeaders(),
+            body: JSON.stringify(productDTO)
+        });
+        if (!response.ok) throw new Error('Failed to add product');
+        return await response.json();
+    },
+
+    // FROM FRIEND: Update existing product
+    updateProduct: async (id, productData) => {
+        const response = await fetch(`${API_BASE}/products/update/${id}`, {
+            method: 'PUT',
+            headers: api.getHeaders(),
+            body: JSON.stringify(productData)
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to update product');
+        }
+        return await response.json();
+    },
+
+    // FROM FRIEND: Toggle availability
+    toggleProductAvailability: async (id) => {
+        const response = await fetch(`${API_BASE}/products/${id}/toggle-availability`, {
+            method: 'PUT',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to toggle status");
+    },
+
+    deleteProduct: async (id) => {
+        const response = await fetch(`${API_BASE}/products/delete/${id}`, {
+            method: 'DELETE',
+            headers: api.getHeaders()
+        });
+        if (!response.ok) throw new Error("Failed to delete product");
+    },
+
     // ============================
     // 3. SHOPPING CART
     // ============================
+
     placeOrder: async (orderData) => {
         try {
             const response = await fetch(`${API_BASE}/orders/place`, {
@@ -242,16 +293,6 @@ const api = {
         return await response.json();
     },
 
-    addProduct: async (productDTO) => {
-        const response = await fetch(`${API_BASE}/products/add`, {
-            method: 'POST',
-            headers: api.getHeaders(),
-            body: JSON.stringify(productDTO)
-        });
-        if (!response.ok) throw new Error('Failed to add product');
-        return await response.json();
-    },
-
     getDriverProfile: async (id) => {
         const response = await fetch(`${API_BASE}/delivery/${id}`, { 
             headers: api.getHeaders() 
@@ -292,21 +333,5 @@ const api = {
         });
         if (!response.ok) throw new Error('Failed to update status');
         return await response.json();
-    },
-
-    deleteCategory: async (id) => {
-        const response = await fetch(`${API_BASE}/categories/delete/${id}`, {
-            method: 'DELETE',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error("Failed to delete category");
-    },
-
-    deleteProduct: async (id) => {
-        const response = await fetch(`${API_BASE}/products/delete/${id}`, {
-            method: 'DELETE',
-            headers: api.getHeaders()
-        });
-        if (!response.ok) throw new Error("Failed to delete product");
     },
 };
