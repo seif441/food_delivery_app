@@ -1,14 +1,9 @@
-FROM eclipse-temurin:21-jdk-alpine
+FROM eclipse-temurin:21-jdk
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY target/app-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 7860
-
-ENV DB_URL=${DB_URL}
-ENV DB_USER=${DB_USER}
-ENV DB_PASS=${DB_PASS}
-ENV PORT=7860
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
