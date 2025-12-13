@@ -37,7 +37,7 @@ async function loadAllData() {
                     id: p.id,
                     name: p.name,
                     price: p.price,
-                    description: `Product ID: ${p.id}`, 
+                    description: p.description || '', // Added from friend's logic
                     available: p.available,
                     image: p.imageUrl || 'https://via.placeholder.com/300?text=No+Image'
                 }))
@@ -46,183 +46,6 @@ async function loadAllData() {
     } catch (e) { console.error("Menu Load Error", e); }
 
     try {
-        // MANUAL FIX: Send 'name' AND 'description' to satisfy the database
-        const response = await fetch('/api/categories/add', {
-            method: 'POST',
-            headers: api.getHeaders(),
-            body: JSON.stringify({ description: description, name: description }) 
-        });
-
-        if (!response.ok) throw new Error("Failed to add category");
-        
-        closeModal('categoryModal');
-        document.getElementById('catDesc').value = ''; 
-        loadMenuByCategory(); 
-        alert("Category Added!");
-    } catch (error) {
-        console.error(error);
-        alert("Error creating category: " + error.message);
-    }
-}
-
-async function deleteCategory(id) {
-    if(!confirm("Delete this category?")) return;
-    try {
-        // UPDATE: Use api.js wrapper
-        await api.deleteCategory(id);
-        loadMenuByCategory();
-    } catch(e) { alert("Error deleting category"); }
-}
-
-// --- Add Product ---
-function openProductModal(catId, catName) {
-    // Clear the Hidden ID (Important!)
-    const pIdInput = document.getElementById('pId');
-    if (pIdInput) pIdInput.value = ''; 
-
-    // Set Category info
-    const catInput = document.getElementById('pCategoryId');
-    if(catInput) catInput.value = catId;
-    
-    const title = document.getElementById('targetCategoryName');
-    if(title) title.innerText = "Add to " + catName;
-
-    // Clear form fields
-    document.getElementById('pName').value = ''; 
-    document.getElementById('pPrice').value = '';
-    document.getElementById('pImg').value = '';
-    if(document.getElementById('pDesc')) document.getElementById('pDesc').value = '';
-    
-    // Reset Checkbox
-    const availableCheckbox = document.getElementById('pAvailable');
-    if(availableCheckbox) availableCheckbox.checked = true;
-
-    // Update Button Text
-    const submitBtn = document.querySelector('#productModal button[type="submit"]');
-    if(submitBtn) submitBtn.innerText = "Add Product";
-
-    document.getElementById('productModal').style.display = 'flex';
-}
-
-function openEditProductModal(product) {
-    // Set the Hidden ID (So submit knows to update)
-    const pIdInput = document.getElementById('pId');
-    if (pIdInput) pIdInput.value = product.id;
-
-    // Fill the fields
-    document.getElementById('pName').value = product.name;
-    document.getElementById('pPrice').value = product.price;
-    document.getElementById('pImg').value = product.imageUrl;
-    if(document.getElementById('pDesc')) document.getElementById('pDesc').value = product.description || '';
-
-    // Set Category
-    const catInput = document.getElementById('pCategoryId');
-    if(catInput && product.category) catInput.value = product.category.id;
-
-    // Set Checkbox
-    const availableCheckbox = document.getElementById('pAvailable');
-    if(availableCheckbox) availableCheckbox.checked = product.available;
-
-    // Change Title and Button Text
-    const title = document.getElementById('targetCategoryName');
-    if(title) title.innerText = "Edit Product";
-
-    const submitBtn = document.querySelector('#productModal button[type="submit"]');
-    if(submitBtn) submitBtn.innerText = "Update Product";
-
-    document.getElementById('productModal').style.display = 'flex';
-}
-
-async function handleProductSubmit(e) {
-    e.preventDefault();
-
-    // Check if we have an ID (If yes, we are editing. If no, we are adding)
-    const productId = document.getElementById('pId') ? document.getElementById('pId').value : null;
-
-    const availableCheckbox = document.getElementById('pAvailable');
-
-    const productData = {
-        name: document.getElementById('pName').value,
-        description: document.getElementById('pDesc') ? document.getElementById('pDesc').value : "",
-        price: parseFloat(document.getElementById('pPrice').value),
-        imageUrl: document.getElementById('pImg').value,
-        categoryId: parseInt(document.getElementById('pCategoryId').value),
-        available: availableCheckbox ? availableCheckbox.checked : true 
-    };
-
-    try {
-        if (productId) {
-            // --- UPDATE MODE ---
-            await api.updateProduct(productId, productData);
-            alert("Product Updated!");
-        } else {
-            // --- ADD MODE ---
-            await api.addProduct(productData);
-            alert("Product Added!");
-        }
-        
-        closeModal('productModal');
-        loadMenuByCategory(); // Refresh the grid
-        
-    } catch (error) {
-        console.error(error);
-        alert("Error saving product: " + error.message);
-    }
-}
-
-async function deleteProduct(id) {
-    if(!confirm("Remove this product?")) return;
-    try {
-        // MANUAL FIX: Updated URL to match ProductController
-        await fetch(`/api/products/delete/${id}`, { method: 'DELETE', headers: api.getHeaders() });
-        loadMenuByCategory();
-    } catch(e) { alert("Error deleting product"); }
-}
-
-// NEW HELPER: Load categories into the invisible dropdown (if needed for reference)
-async function loadCategoriesForSelect() {
-    const select = document.getElementById('pCategory'); 
-    if(!select) return;
-    
-    const categories = await api.getAllCategories();
-    select.innerHTML = '';
-    categories.forEach(c => {
-        const option = document.createElement('option');
-        option.value = c.id;
-        option.text = c.description || c.name;
-        select.appendChild(option);
-    });
-}
-
-async function toggleAvailability(id) {
-    try {
-        // Call the new endpoint
-        const response = await fetch(`/api/products/${id}/toggle-availability`, {
-            method: 'PUT',
-            headers: api.getHeaders()
-        });
-
-        if (!response.ok) throw new Error("Failed to toggle status");
-        
-        // Reload the menu to see the change
-        loadMenuByCategory();
-    } catch (error) {
-        console.error(error);
-        alert("Error updating status");
-    }
-}
-
-
-// ==========================================
-// 2. STAFF & USER MANAGEMENT (Grouped)
-// ==========================================
-
-async function loadStaff() {
-    const tbody = document.getElementById('staffTableBody');
-    if (!tbody) return;
-
-    try {
-        // UPDATE: Use api.js wrapper
         const users = await api.getAllUsers();
         state.staff = users.map(u => ({
             id: u.id,
@@ -315,9 +138,16 @@ function getMenuHtml() {
                 <i data-lucide="plus-circle" class="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-orange-400"></i>
                 <p class="text-gray-400 text-sm group-hover:text-orange-600">Add first product to ${cat.name}</p></div>`
             : cat.products.map(p => {
+                // Prepare object string for passing to onclick
+                const pString = JSON.stringify(p).replace(/"/g, '&quot;');
+                
                 return `<div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-orange-100 transition-all duration-300 flex flex-col ${!p.available ? 'opacity-75 grayscale' : ''}">
                     <div class="h-48 w-full bg-gray-100 relative overflow-hidden">
                         <img src="${p.image}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                             <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="bg-white text-gray-800 p-2 rounded-full hover:bg-orange-500 hover:text-white transition-colors" title="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                             <button onclick="handleToggleAvailability('${p.id}')" class="bg-white text-gray-800 p-2 rounded-full hover:bg-blue-500 hover:text-white transition-colors" title="Toggle Visibility"><i data-lucide="${p.available ? 'eye-off' : 'eye'}" class="w-4 h-4"></i></button>
+                        </div>
                         <div class="absolute top-3 right-3"><span class="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm backdrop-blur-md ${p.available ? 'bg-white/90 text-green-700' : 'bg-gray-800/90 text-white'}">${p.available ? 'Active' : 'Hidden'}</span></div>
                     </div>
                     <div class="p-5 flex-1 flex flex-col">
@@ -327,7 +157,10 @@ function getMenuHtml() {
                         </div>
                         <div class="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto">
                             <span class="text-xs text-gray-400">ID: ${p.id}</span>
-                            <button onclick="handleDeleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg md:hidden"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button onclick="handleDeleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                            </div>
                         </div>
                     </div>
                 </div>`;
@@ -382,35 +215,63 @@ function getOrdersHtml() {
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 border-l-4 border-l-orange-500"><div class="flex justify-between items-start mb-4"><div><span class="text-xs font-bold text-gray-400 uppercase">${o.id}</span><h3 class="font-bold text-lg text-gray-800">${o.customer}</h3></div><span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-orange-100 text-orange-700">${o.status}</span></div><div class="flex justify-between items-center pt-4 border-t border-gray-100"><span class="font-bold text-xl text-gray-800">$${o.total.toFixed(2)}</span></div></div>`).join('')}</div>`;
 }
 
+// --- FORM HANDLING ---
+
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const { type, catId } = state.modal;
+    const { type, catId, item } = state.modal;
 
     try {
         if (type === 'addStaff') {
-            await api.addStaffMember({
+            const role = formData.get('role');
+            
+            // Base User Data
+            const staffData = {
                 name: formData.get('name'),
                 email: formData.get('email'),
                 password: formData.get('password')
-            }, formData.get('role'));
+            };
+
+            // ADDED: Special Logic for Delivery Staff (YOUR REQUEST)
+            if (role === 'DELIVERY_STAFF') {
+                staffData.dtype = "DELIVERY_STAFF";
+                staffData.isAvailable = 0; // Explicitly set to 0 as requested
+            } else {
+                staffData.dtype = "STAFF"; 
+            }
+
+            await api.addStaffMember(staffData, role);
             alert("Staff Added");
         } 
         else if (type === 'addCategory') {
             const name = formData.get('catName');
-            const icon = formData.get('icon'); // Get icon from hidden input
+            const icon = formData.get('icon'); 
             await api.addCategory(name, icon);
             alert("Category Added");
         } 
         else if (type === 'addProduct') {
             await api.addProduct({
                 name: formData.get('name'),
+                description: formData.get('description'),
                 price: parseFloat(formData.get('price')),
                 imageUrl: formData.get('image'),
                 categoryId: parseInt(catId),
-                available: true
+                available: formData.get('available') === 'on'
             });
             alert("Product Added");
+        }
+        else if (type === 'editProduct') {
+            // ADDED: Update logic from friend
+            await api.updateProduct(item.id, {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                price: parseFloat(formData.get('price')),
+                imageUrl: formData.get('image'),
+                categoryId: parseInt(catId),
+                available: formData.get('available') === 'on'
+            });
+            alert("Product Updated");
         }
         closeModal();
         loadAllData(); 
@@ -426,6 +287,10 @@ async function handleDeleteCategory(id) {
 async function handleDeleteProduct(id) {
     if(!confirm("Remove Product?")) return;
     try { await api.deleteProduct(id); loadAllData(); } catch(e) { alert("Error deleting product"); }
+}
+// ADDED: Toggle Helper
+async function handleToggleAvailability(id) {
+    try { await api.toggleProductAvailability(id); loadAllData(); } catch(e) { alert("Error updating status"); }
 }
 async function handleDeleteStaff(id) {
     if(!confirm("Remove User?")) return;
@@ -471,34 +336,35 @@ function openModal(type, item = null, catId = null) {
     } 
     else if (type === 'addCategory') {
         title.innerText = 'New Category';
-        // Define available icons
         const icons = ['🍕', '🍔', '🌮', '🍣', '🥗', '🍩', '🥤', '☕', '🍗', '🍜', '🥪', '🥩'];
         const iconsHtml = icons.map(icon => 
             `<button type="button" onclick="selectIcon('${icon}', this)" class="icon-btn w-10 h-10 text-xl border border-gray-200 rounded-lg hover:bg-gray-50 transition-all flex items-center justify-center">${icon}</button>`
         ).join('');
 
         body.innerHTML = `<form onsubmit="handleFormSubmit(event)" class="space-y-4">
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category Name</label>
-                <input name="catName" required placeholder="e.g. Italian, Drinks" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
-            </div>
-            <div>
-                <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Choose Icon</label>
-                <div class="grid grid-cols-6 gap-2">
-                    ${iconsHtml}
-                </div>
-                <input type="hidden" name="icon" id="selectedIconInput" value="🍽️">
-            </div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Category Name</label><input name="catName" required placeholder="e.g. Italian, Drinks" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Choose Icon</label><div class="grid grid-cols-6 gap-2">${iconsHtml}</div><input type="hidden" name="icon" id="selectedIconInput" value="🍽️"></div>
             <button type="submit" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 mt-2">Create Category</button>
         </form>`;
     } 
-    else if (type === 'addProduct') {
-        title.innerText = 'Add Product';
+    else if (type === 'addProduct' || type === 'editProduct') {
+        const isEdit = type === 'editProduct';
+        title.innerText = isEdit ? 'Edit Product' : 'Add Product';
+        const btnText = isEdit ? 'Update Product' : 'Add Product';
+        
+        const valName = item ? item.name : '';
+        const valPrice = item ? item.price : '';
+        const valDesc = item ? item.description : '';
+        const valImg = item ? item.image : '';
+        const valCheck = (item ? item.available : true) ? 'checked' : '';
+
         body.innerHTML = `<form onsubmit="handleFormSubmit(event)" class="space-y-4">
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label><input name="name" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price</label><input name="price" type="number" step="0.01" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
-            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Image URL</label><input name="image" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
-            <button type="submit" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 mt-2">Add Product</button>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Name</label><input name="name" value="${valName}" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Price</label><input name="price" type="number" step="0.01" value="${valPrice}" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Description</label><textarea name="description" rows="2" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none resize-none">${valDesc}</textarea></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-1">Image URL</label><input name="image" value="${valImg}" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"></div>
+            <div class="flex items-center space-x-2 pt-2"><input type="checkbox" name="available" id="pAvailable" class="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded" ${valCheck}><label for="pAvailable" class="text-sm font-medium text-gray-700">Available immediately</label></div>
+            <button type="submit" class="w-full bg-orange-600 text-white py-3 rounded-lg font-bold hover:bg-orange-700 mt-2">${btnText}</button>
         </form>`;
     }
 }
