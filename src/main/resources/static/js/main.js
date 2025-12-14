@@ -152,6 +152,39 @@ function logout() {
     // Optional: Redirect to home
     window.location.href = 'index.html';
 }
+function updateMobileAuthButton() {
+    const mobileAuthBtn = document.getElementById('mobile-auth-btn');
+    if (!mobileAuthBtn) return;
+
+    if (state.user) {
+        // Case 1: User is Logged In
+        // Show "Log Out" text with the specific Log Out icon
+        mobileAuthBtn.innerHTML = `
+            <i data-lucide="log-out" class="w-6 h-6"></i>
+            <span class="text-[10px]">Log Out</span>
+        `;
+        mobileAuthBtn.onclick = logout; 
+    } else {
+        // Case 2: User is NOT Logged In
+        // Show "Log In" text, but use the PROFILE (user) icon as requested
+        mobileAuthBtn.innerHTML = `
+            <i data-lucide="user" class="w-6 h-6"></i>
+            <span class="text-[10px]">Log In</span>
+        `;
+        mobileAuthBtn.onclick = () => window.location.href = 'auth.html';
+    }
+    
+    // Refresh the icons so they appear correctly
+    if(window.lucide) lucide.createIcons();
+}
+
+// Call this function when the page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // ... existing init code ...
+    updateMobileAuthButton();
+});
+
+
 
 // ==========================================
 // 3. DATA LOADING (MENU)
