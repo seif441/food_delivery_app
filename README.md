@@ -18,7 +18,7 @@ A comprehensive, full-stack food delivery application built with **Spring Boot**
 The system follows a microservice-ready architecture using **Spring Cloud**:
 
 1.  **Main Application (Core Monolith):** Runs on port `5005` (Locally). Handles all business logic, database interactions, and serves the frontend static resources.
-2.  **API Gateway:** Runs on port `8080`. Acts as the single entry point, handling routing and security interception before forwarding requests to the main application.
+2.  **API Gateway:** Runs on port `7070`. Acts as the single entry point, handling routing and security interception before forwarding requests to the main application.
 
 ## 🚀 Features by Role
 
@@ -73,7 +73,7 @@ The system follows a microservice-ready architecture using **Spring Cloud**:
     ```bash
     ./mvnw spring-boot:run
     ```
-    *The Gateway will start on port `8080`.*
+    *The Gateway will start on port `7070`.*
 
 ---
 
@@ -83,7 +83,7 @@ The system follows a microservice-ready architecture using **Spring Cloud**:
 Visit: **[https://food-delivery-system-production-a37e.up.railway.app/](https://food-delivery-system-production-a37e.up.railway.app/)**
 
 ### Option 2: Local Development (Gateway)
-Visit: **http://localhost:8080/auth.html**
+Visit: **http://localhost:7070/auth.html**
 
 * **Login:** Users are redirected to their specific dashboards based on their role (Admin, Staff, Delivery, Customer) upon successful authentication.
 * **Tracking:** System activity is automatically logged to `system_activity_logs.txt` in the root directory via AOP.
