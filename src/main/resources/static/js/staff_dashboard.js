@@ -3,7 +3,7 @@
  * CONNECTED TO BACKEND (Port 5005) + ANIMATIONS RESTORED
  */
 // Ensure API_BASE matches your api.js setting
-const STAFF_API_BASE = 'http://localhost:5005/api/staff'; 
+const STAFF_API_BASE = 'https://food-delivery-system-production-a37e.up.railway.app/api/staff';
 
 const StaffDashboard = {
     staffId: null,

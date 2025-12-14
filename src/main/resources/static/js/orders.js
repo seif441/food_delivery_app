@@ -1,7 +1,7 @@
 const OrderManager = {
     currentTab: 'active',
     orders: [],
-    API_BASE_URL: 'http://localhost:5005/api/orders', 
+    API_BASE_URL: 'https://food-delivery-system-production-a37e.up.railway.app/api/orders', 
 
     init() {
         if (window.lucide) lucide.createIcons();

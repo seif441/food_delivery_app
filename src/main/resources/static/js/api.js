@@ -1,5 +1,10 @@
 // FIXED: Point to your running Spring Boot backend on port 5005
-const API_BASE = 'http://localhost:5005/api';
+// api.js - Line 2
+// REPLACE THIS LINE:
+// const API_BASE = 'http://localhost:5005/api';
+
+// WITH THIS:
+const API_BASE = 'https://food-delivery-system-production-a37e.up.railway.app/api';
 
 const api = {
     // 1. Session Persistence: Load user immediately
