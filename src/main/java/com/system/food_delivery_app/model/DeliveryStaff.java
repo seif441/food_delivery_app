@@ -6,8 +6,6 @@ import jakarta.persistence.Entity;
 @Entity
 @DiscriminatorValue("DELIVERY_STAFF")
 public class DeliveryStaff extends User {
-
-    // FIXED: Default to FALSE (Offline) so they must manually go online
     private Boolean isAvailable = false;
 
     public DeliveryStaff() {

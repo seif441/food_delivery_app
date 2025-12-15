@@ -46,11 +46,7 @@ const OrderManager = {
             if (!response.ok) throw new Error(`Server Error (${response.status})`);
             
             this.orders = await response.json();
-            
-            // Sort: Newest first
             this.orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate));
-
-            // Render current tab
             this.renderOrders(this.currentTab);
 
         } catch (error) {
@@ -62,23 +58,18 @@ const OrderManager = {
         }
     },
 
-    // --- 3. RENDER UI ---
     renderOrders(tab) {
         const list = document.getElementById('orders-list');
         if (!list) return;
 
         list.innerHTML = ''; 
-
-        // Define what constitutes "Active" vs "Past"
         const activeStatuses = ['PENDING', 'PREPARED', 'PREPARING', 'OUT_FOR_DELIVERY'];
-        // Explicitly define Past statuses to be safe
         const pastStatuses = ['DELIVERED', 'CANCELLED', 'REJECTED'];
 
         const filteredOrders = this.orders.filter(o => {
             if (tab === 'active') {
                 return activeStatuses.includes(o.status);
             } else {
-                // If it's in past statuses OR simply not in active statuses
                 return pastStatuses.includes(o.status) || !activeStatuses.includes(o.status);
             }
         });
@@ -104,8 +95,6 @@ const OrderManager = {
         filteredOrders.forEach((order) => {
             const items = order.items || [];
             const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-            
-            // Format item names
             const itemNames = items.length > 0 
                 ? items.map(i => `${i.product ? i.product.name : 'Item'} (x${i.quantity})`).join(', ')
                 : "No items details available";
@@ -116,8 +105,6 @@ const OrderManager = {
 
             const card = document.createElement('div');
             card.className = `bg-white p-5 rounded-2xl border border-gray-100 shadow-sm mb-4 animate-fade-in`;
-
-            // Dynamic Status Color
             let statusColor = "bg-gray-100 text-gray-600";
             if(order.status === 'DELIVERED') statusColor = "bg-green-100 text-green-700 border-green-200";
             if(order.status === 'CANCELLED') statusColor = "bg-red-50 text-red-600 border-red-100";
@@ -169,61 +156,47 @@ const OrderManager = {
 
     formatDate(dateVal) {
         if (!dateVal) return '';
-        // Handle Java LocalDateTime Array [2025, 12, 12, 10, 30]
         if (Array.isArray(dateVal)) {
             const time = `${dateVal[3].toString().padStart(2,'0')}:${dateVal[4].toString().padStart(2,'0')}`;
             return `${dateVal[2]}/${dateVal[1]}/${dateVal[0]} ${time}`;
         }
         return new Date(dateVal).toLocaleDateString();
     },
-    // --- ANIMATION & ACTION ---
 
     async prepareOrder(orderId) {
         const card = document.getElementById(`ticket-${orderId}`);
         const btn = document.getElementById(`btn-cook-${orderId}`);
-        
-        // 1. Button Feedback
         if(btn) {
             btn.innerHTML = `<i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Igniting...`;
             btn.className = "bg-orange-600 text-white py-2 rounded-lg font-bold text-sm transition w-full shadow-lg shadow-orange-500/50";
             if(window.lucide) lucide.createIcons();
         }
-
-        // 2. RESTORED: Sizzle & Steam Animation
         if(card) {
-            card.classList.add('animate-sizzle'); // Makes the card glow orange
-            this.spawnSteam(card);                // Spawns the steam particles
+            card.classList.add('animate-sizzle');
+            this.spawnSteam(card);               
         }
-
-        // 3. Delay API call slightly to let the animation play
         setTimeout(async () => {
             try {
                 await api.prepareOrder(this.staffId, orderId);
                 
-                // Success: Animate card away
                 if(card) {
                     card.classList.remove('animate-sizzle');
                     card.classList.add('animate-scale-out');
                 }
                 
-                // Refresh list after animation finishes
                 setTimeout(() => this.fetchOrders(), 200);
             } catch(e) {
                 alert("Failed to start cooking.");
                 this.fetchOrders(); 
             }
-        }, 1000); // 1 second delay for the visual effect
+        }, 1000);
     },
-
-    // --- HELPER: Spawns Steam Particles ---
     spawnSteam(card) {
-        // Create 6 puff clouds
         for (let i = 0; i < 6; i++) {
             setTimeout(() => {
                 const steam = document.createElement('div');
                 steam.className = 'steam-particle';
                 
-                // Randomize size and position
                 const size = Math.random() * 10 + 10;
                 steam.style.width = `${size}px`;
                 steam.style.height = `${size}px`;
@@ -231,17 +204,12 @@ const OrderManager = {
                 steam.style.top = '60%'; 
                 
                 card.appendChild(steam);
-                
-                // Remove particle after animation triggers
                 setTimeout(() => steam.remove(), 1000);
-            }, i * 150); // Stagger them
+            }, i * 150);
         }
     },
-    // --- 4. FIX: TAB SWITCHING ---
     switchTab(tab) {
         this.currentTab = tab;
-        
-        // 1. Update Text Colors
         const btnActive = document.getElementById('tab-active');
         const btnPast = document.getElementById('tab-past');
         
@@ -252,20 +220,14 @@ const OrderManager = {
             btnPast.classList.replace('text-gray-500', 'text-gray-900');
             btnActive.classList.replace('text-gray-900', 'text-gray-500');
         }
-
-        // 2. FIX: Animate the White Background Slider
         const indicator = document.getElementById('tab-indicator');
         if (indicator) {
             if (tab === 'active') {
                 indicator.style.transform = 'translateX(0)';
             } else {
-                // Move it 100% to the right (plus a tiny gap adjustment if needed)
                 indicator.style.transform = 'translateX(100%)'; 
-                // Or slightly more precise: calc(100% + 4px) depending on your HTML gap
             }
         }
-
-        // 3. Re-render list
         this.renderOrders(tab);
     },
 
@@ -274,7 +236,6 @@ const OrderManager = {
         try {
             const response = await fetch(`${this.API_BASE_URL}/${orderId}`, { method: 'DELETE' });
             if (response.ok) {
-                // Refresh list
                 this.start(); 
             } else {
                 alert("Could not cancel order.");

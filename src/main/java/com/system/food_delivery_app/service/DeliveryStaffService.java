@@ -21,7 +21,7 @@ public class DeliveryStaffService {
     private OrderRepository orderRepository;
     
     @Autowired
-    private OrderService orderService; // Needed to trigger assignment logic
+    private OrderService orderService;
 
     public DeliveryStaff getDeliveryStaffById(Long id) {
         return deliveryStaffRepository.findById(id)
@@ -45,12 +45,10 @@ public class DeliveryStaffService {
 
         if (order.getStatus() == OrderStatus.OUT_FOR_DELIVERY) {
             order.setStatus(OrderStatus.DELIVERED);
-            
-            // IMPORTANT: Driver is free again, so set TRUE
+
             driver.setAvailable(true);
             deliveryStaffRepository.save(driver);
-            
-            // Check if there are more pending orders waiting for a driver
+
             orderService.checkAndAssignWaitingOrders(driver);
 
             return orderRepository.save(order);
@@ -64,18 +62,15 @@ public class DeliveryStaffService {
         return orderRepository.findByDeliveryStaffIdAndStatus(deliveryStaffId, OrderStatus.DELIVERED);
     }
     
-    // FIXED TOGGLE LOGIC
+
     @Transactional
     public DeliveryStaff toggleAvailability(Long id) {
         DeliveryStaff driver = getDeliveryStaffById(id);
-        
-        // Handle NULL safety
         boolean current = driver.getIsAvailable() != null && driver.getIsAvailable();
-        driver.setAvailable(!current); // Toggle
+        driver.setAvailable(!current); 
         
         DeliveryStaff savedDriver = deliveryStaffRepository.save(driver);
         
-        // IF they just went ONLINE, check for waiting orders
         if (savedDriver.getIsAvailable()) {
             orderService.checkAndAssignWaitingOrders(savedDriver);
         }

@@ -20,13 +20,11 @@ public class DataSeeder implements CommandLineRunner {
     
     @Override
     public void run(String... args) throws Exception {
-        // 1. Create Roles if they don't exist
         createRoleIfNotFound("ADMIN");
         createRoleIfNotFound("CUSTOMER");
         createRoleIfNotFound("STAFF");
         createRoleIfNotFound("DELIVERY_STAFF");
 
-        // 2. Create 1 Default Admin if not exists
         if (userRepository.findByEmail("admin@crave.com").isEmpty()) {
             Admin admin = new Admin();
             admin.setName("System Administrator");
@@ -38,7 +36,7 @@ public class DataSeeder implements CommandLineRunner {
             admin.setRole(adminRole);
 
             userRepository.save(admin);
-            System.out.println("✅ DataSeeder: Default Admin Created (admin@crave.com)");
+            System.out.println(" DataSeeder: Default Admin Created (admin@crave.com)");
         }
     }
 

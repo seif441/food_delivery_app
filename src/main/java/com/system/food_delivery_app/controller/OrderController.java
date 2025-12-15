@@ -10,7 +10,6 @@ import com.system.food_delivery_app.service.OrderService;
 
 @RestController
 @RequestMapping("/api/orders")
-// Global WebConfig handles CORS now, but keeping this specific one doesn't hurt if configured correctly
 @CrossOrigin(originPatterns = "*", allowCredentials = "true") 
 public class OrderController {
 
@@ -22,7 +21,6 @@ public class OrderController {
         return ResponseEntity.ok(OrderStatus.values());
     }
 
-    // --- CUSTOMER: PLACE ORDER ---
     @PostMapping("/place")
     public ResponseEntity<?> placeOrder(@RequestBody Order order) {
         try {
@@ -42,7 +40,6 @@ public class OrderController {
         }
     }
 
-    // --- CUSTOMER: GET ORDERS ---
     @GetMapping("/customer/{customerId}")
     public ResponseEntity<?> getOrdersByCustomer(@PathVariable Long customerId) {
         try {
@@ -66,7 +63,6 @@ public class OrderController {
         }
     }
 
-    // --- KITCHEN ---
     @PutMapping("/{id}/prepared")
     public ResponseEntity<?> markOrderPrepared(@PathVariable Long id) {
         try {
@@ -77,7 +73,6 @@ public class OrderController {
         }
     }
 
-    // --- GENERAL ---
     @GetMapping("/{id}")
     public ResponseEntity<Order> getOrderById(@PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderById(id));

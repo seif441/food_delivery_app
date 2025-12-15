@@ -29,9 +29,6 @@ public class CartItem {
     @JsonIgnore
     private Cart cart;
 
-    // ==========================================
-    // GETTERS AND SETTERS
-    // ==========================================
     
     public Long getId() { return this.id; }
     public void setId(Long id) { this.id = id; }
@@ -50,10 +47,6 @@ public class CartItem {
 
     public double getPrice() { return this.price; }
     public void setPrice(double price) { this.price = price; }
-
-    // ==========================================
-    // BUSINESS METHODS
-    // ==========================================
     
     public void calculateSubTotal() {
         if (this.product == null) {

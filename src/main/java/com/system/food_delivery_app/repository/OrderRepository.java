@@ -9,12 +9,9 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // Finds orders where order.customer.id == customerId
     List<Order> findByCustomerId(Long customerId);
 
-    // For Delivery Dashboard
     List<Order> findByDeliveryStaffIdAndStatus(Long deliveryStaffId, OrderStatus status);
 
-    // For Kitchen
-    List<Order> findByStatus(OrderStatus status);
+      List<Order> findByStatus(OrderStatus status);
 }

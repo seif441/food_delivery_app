@@ -20,14 +20,12 @@ public class SystemTrackingAspect {
         this.trackingService = trackingService;
     }
 
-    // --- 1. TRACK LOGIN ---
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.UserService.loginUser(..))", returning = "user")
     public void logUserLogin(User user) {
         String role = (user.getRole() != null) ? user.getRole().getRoleName() : "UNKNOWN";
         trackingService.logEvent("LOGIN", "User: " + user.getName() + " | Role: " + role + " | Action: Logged In");
     }
 
-    // --- 2. TRACK CUSTOMER PLACING ORDER ---
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.OrderService.placeOrder(..))", returning = "order")
     public void logOrderPlacement(Order order) {
         String customerName = (order.getCustomer() != null) ? order.getCustomer().getName() : "Unknown";
@@ -35,14 +33,12 @@ public class SystemTrackingAspect {
             "Order ID: " + order.getId() + " placed by " + customerName + " | Total: $" + order.getTotalPrice());
     }
 
-    // --- 3. TRACK STAFF STARTING PREPARATION ---
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.StaffService.prepareOrder(..))", returning = "order")
     public void logOrderPreparationStart(Order order) {
         trackingService.logEvent("KITCHEN_START", 
             "Order ID: " + order.getId() + " is now being prepared by Kitchen Staff.");
     }
 
-    // --- 4. TRACK KITCHEN FINISHING & DRIVER ASSIGNMENT ---
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.OrderService.staffMarkAsPrepared(..))", returning = "order")
     public void logKitchenFinishAndDriverAssignment(Order order) {
         trackingService.logEvent("KITCHEN_READY", "Order ID: " + order.getId() + " is prepared.");
@@ -56,7 +52,6 @@ public class SystemTrackingAspect {
         }
     }
 
-    // --- 5. TRACK DELIVERY COMPLETION ---
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.DeliveryStaffService.completeDelivery(..))", returning = "order")
     public void logDeliveryCompletion(Order order) {
         String driverName = (order.getDeliveryStaff() != null) ? order.getDeliveryStaff().getName() : "Unknown";
@@ -64,8 +59,6 @@ public class SystemTrackingAspect {
             "Order ID: " + order.getId() + " delivered successfully by " + driverName);
     }
 
-    // --- 6. TRACK ORDER CANCELLATION (NEW) ---
-    // We capture the 'orderId' argument from the method call
     @AfterReturning(pointcut = "execution(* com.system.food_delivery_app.service.OrderService.cancelOrder(..)) && args(orderId)")
     public void logOrderCancellation(Long orderId) {
         trackingService.logEvent("ORDER_CANCELLED", 

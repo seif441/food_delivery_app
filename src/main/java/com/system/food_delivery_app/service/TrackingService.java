@@ -13,7 +13,6 @@ public class TrackingService {
 
     private static final String LOG_FILE_PATH = "system_activity_logs.txt"; 
 
-    // Used by the AOP Aspect
     public void logEvent(String action, String details) {
         try {
             File file = new File(LOG_FILE_PATH);
@@ -27,7 +26,6 @@ public class TrackingService {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file, true))) {
                 writer.write(logEntry);
             }
-            // Optional: Print to console for development visibility
             System.out.println("AOP Log: " + action + " - " + details);
 
         } catch (IOException e) {

@@ -9,9 +9,7 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**") // Apply to all endpoints
-                // FIXED: Using "*" pattern allows ALL ports (5500, 5005, 3000, etc.)
-                // This resolves the "IllegalArgumentException" regarding wildcards & credentials.
+        registry.addMapping("/**")
                 .allowedOriginPatterns("*") 
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*")

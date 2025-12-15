@@ -7,6 +7,6 @@ import java.util.List;
 
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    // Helper method to find all products inside a specific category
+
     List<Product> findByCategoryId(Long categoryId);
 }

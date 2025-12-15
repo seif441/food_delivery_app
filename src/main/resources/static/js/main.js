@@ -1,39 +1,27 @@
-// src/main/resources/static/js/main.js
-
-// --- Global Application State ---
 let state = {
     user: JSON.parse(localStorage.getItem('user')) || null,
-    cartId: null,      // Stores the ID of the cart from the database
-    cartItems: [],     // Stores the array of items in the cart
-    products: [],      // Stores loaded products
-    categories: [],    // Stores loaded categories
-    addresses: [],     // Store user addresses
-    pendingAction: null, // To store 'checkout' intent when forced to add address
+    cartId: null,     
+    cartItems: [],     
+    products: [],     
+    categories: [],  
+    addresses: [],   
+    pendingAction: null, 
     activeCategory: 'all'
 };
 
-// --- Initialization ---
 document.addEventListener('DOMContentLoaded', async () => {
     lucide.createIcons();
     updateHeaderUser();
     
-    // 1. Load Initial Data
     await loadCategories();
     await loadProducts('all');
-    
-    // 2. Initialize Cart & Addresses (if logged in)
     if (state.user) {
         await refreshCart();
         await loadUserAddresses();
     }
-    
-    // 3. Setup Global Event Listeners
+
     setupEventListeners();
 });
-
-// ==========================================
-// 1. ADDRESS MANAGEMENT LOGIC
-// ==========================================
 
 async function loadUserAddresses() {
     if (!state.user) return;
@@ -71,8 +59,6 @@ async function handleAddressSubmit(e) {
     const form = e.target;
     const formData = new FormData(form);
     
-    // Construct payload for Java Entity
-    // Note: We wrap "user" object because of @ManyToOne relation
     const payload = {
         streetAddress: formData.get('streetAddress'),
         city: formData.get('city'),
@@ -88,15 +74,14 @@ async function handleAddressSubmit(e) {
 
     try {
         await api.createAddress(payload);
-        await loadUserAddresses(); // Refresh local state
+        await loadUserAddresses(); 
         closeAddressModal();
         form.reset();
         
-        // If we were trying to checkout, resume now
         if (state.pendingAction === 'checkout') {
             state.pendingAction = null;
-            openCartDrawer(); // Re-open drawer
-            handleCheckout(); // Retry checkout
+            openCartDrawer(); 
+            handleCheckout(); 
         }
 
     } catch (err) {
@@ -106,10 +91,6 @@ async function handleAddressSubmit(e) {
         btn.disabled = false;
     }
 }
-
-// ==========================================
-// 2. HEADER & AUTHENTICATION UI
-// ==========================================
 
 function updateHeaderUser() {
     const authSection = document.getElementById('nav-auth-section');
@@ -143,40 +124,26 @@ function logout() {
     state.cartId = null;
     state.cartItems = [];
     state.addresses = [];
-    
-    // Reset UI
+
     updateHeaderUser();
     updateLocationHeader();
     updateCartUI();
-    
-    // Optional: Redirect to home
     window.location.href = 'index.html';
 }
 
-// ==========================================
-// 3. DATA LOADING (MENU)
-// ==========================================
-
-// src/main/resources/static/js/main.js
-
 async function loadCategories() {
     try {
-        // Use cached categories if we have them to prevent flickering/re-fetching
         if (state.categories.length === 0) {
             state.categories = await api.getAllCategories();
         }
         
         const rail = document.getElementById('category-rail');
         if(!rail) return;
-
-        // Define Styles
         const activeDiv = "bg-orange-500 text-white shadow-orange-200";
         const inactiveDiv = "bg-white border border-gray-100 group-hover:bg-orange-50";
         
         const activeText = "text-orange-600";
         const inactiveText = "text-gray-600 group-hover:text-orange-600";
-
-        // Render Category Buttons
         rail.innerHTML = `
             <button onclick="loadProducts('all')" class="flex flex-col items-center gap-3 min-w-[80px] group">
                 <div class="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl shadow-sm transition-colors ${state.activeCategory === 'all' ? activeDiv : inactiveDiv}">🍽️</div>
@@ -195,19 +162,13 @@ async function loadCategories() {
     } catch(e) { console.error("Error loading categories:", e); }
 }
 
-// src/main/resources/static/js/main.js
-
-// src/main/resources/static/js/main.js
-
 async function loadProducts(catId) {
-    // 1. Update Active State & Re-render Rail
     state.activeCategory = catId;
     loadCategories(); 
 
     const grid = document.getElementById('products-grid');
     if (!grid) return;
     
-    // Keep the spinner, it tells the user something is happening
     grid.innerHTML = `
         <div class="col-span-full flex justify-center items-center h-full">
             <div class="animate-spin w-10 h-10 border-4 border-orange-500 border-t-transparent rounded-full"></div>
@@ -223,8 +184,6 @@ async function loadProducts(catId) {
             return;
         }
 
-        // === CHANGE STARTS HERE ===
-        // We added 'index' to the map function to calculate delay
         grid.innerHTML = products.map((p, index) => `
             <div 
                 onclick="openDetailModal(${p.id})" 
@@ -247,23 +206,15 @@ async function loadProducts(catId) {
                 </div>
             </div>
         `).join('');
-        // === CHANGE ENDS HERE ===
-
         lucide.createIcons();
     } catch(e) { console.error("Error loading products:", e); }
 }
 
-// ==========================================
-// 4. CART LOGIC (BACKEND INTEGRATED)
-// ==========================================
 
 async function refreshCart() {
     if (!state.user) return;
     try {
-        // Fetch the Cart from Backend using User ID
         const cart = await api.getCartByUser(state.user.id);
-        
-        // Update Local State
         state.cartId = cart.id;
         state.cartItems = cart.items || [];
         
@@ -274,18 +225,12 @@ async function refreshCart() {
 }
 
 async function addToCart(productId, qty = 1) {
-    // 1. Enforce Login
     if (!state.user) return window.location.href = 'auth.html';
 
     try {
-        // 2. Ensure we have a Cart ID
         if (!state.cartId) await refreshCart();
 
-        // 3. Send Request to Backend
-        // The backend returns the updated Cart object
         const updatedCart = await api.addToCart(state.cartId, productId, qty);
-        
-        // 4. Update State & UI
         state.cartItems = updatedCart.items;
         updateCartUI();
         
@@ -297,8 +242,6 @@ async function addToCart(productId, qty = 1) {
 
 async function updateCartQty(productId, delta) {
     if (!state.cartId) return;
-
-    // Find the item to get current quantity
     const item = state.cartItems.find(i => i.product.id === productId);
     if (!item) return;
 
@@ -307,10 +250,8 @@ async function updateCartQty(productId, delta) {
     try {
         let updatedCart;
         if (newQty <= 0) {
-            // Case: Remove Item
             updatedCart = await api.removeItemFromCart(state.cartId, productId);
         } else {
-            // Case: Update Quantity
             updatedCart = await api.updateCartItem(state.cartId, productId, newQty);
         }
         
@@ -322,17 +263,13 @@ async function updateCartQty(productId, delta) {
 }
 
 function updateCartUI() {
-    // Calculate Totals based on current state
     const total = state.cartItems.reduce((sum, item) => sum + (item.price), 0);
     const count = state.cartItems.reduce((sum, item) => sum + item.quantity, 0);
-
-    // 1. Update Cart Badges (Desktop & Mobile)
     document.querySelectorAll('.cart-badge').forEach(el => {
         el.textContent = count;
         el.classList.toggle('hidden', count === 0);
     });
 
-    // 2. Render Items in Drawer
     const cartContainer = document.getElementById('cart-items-container');
     if (cartContainer) {
         if (state.cartItems.length === 0) {
@@ -360,8 +297,6 @@ function updateCartUI() {
             `).join('');
         }
     }
-
-    // 3. Update Totals Section
     const subtotalEl = document.getElementById('cart-subtotal');
     const totalEl = document.getElementById('cart-total');
     if (subtotalEl) subtotalEl.textContent = `$${total.toFixed(2)}`;
@@ -379,11 +314,8 @@ function closeCartDrawer() {
 }
 
 async function handleCheckout() {
-    // 1. Validation
     if (!state.user) return window.location.href = 'auth.html';
     if (state.cartItems.length === 0) return alert("Your basket is empty!");
-
-    // 2. CHECK IF USER HAS ADDRESS (UPDATED LOGIC)
     if (!state.addresses || state.addresses.length === 0) {
         state.pendingAction = 'checkout';
         closeCartDrawer();
@@ -398,34 +330,28 @@ async function handleCheckout() {
     }
 
     try {
-        // 3. Prepare Data for Backend
         const subtotal = state.cartItems.reduce((sum, item) => sum + item.price, 0);
         const deliveryFee = 2.99;
         
         const orderPayload = {
-            customer: { id: state.user.id }, // Java needs User object with ID
+            customer: { id: state.user.id }, 
             totalPrice: subtotal + deliveryFee,
             status: "PENDING",
             paymentMethod: "CASH_ON_DELIVERY",
-            // Map cart items to the structure Order expects
             items: state.cartItems.map(item => ({
                 product: { id: item.product.id, price: item.product.price }, 
                 quantity: item.quantity,
-                price: item.price // This is total price for this line item
+                price: item.price
             }))
         };
-
-        // 4. Send to Backend
-        console.log("Sending Order:", orderPayload); // Debugging
+        console.log("Sending Order:", orderPayload);
         const createdOrder = await api.placeOrder(orderPayload);
         console.log("Order Created:", createdOrder);
 
-        // 5. Clear Cart (Now it's safe to delete cart items)
         if (state.cartId) {
             await api.clearCart(state.cartId);
         }
 
-        // 6. Success UI
         closeCartDrawer();
         const overlay = document.getElementById('success-overlay');
         if(overlay) {
@@ -433,8 +359,6 @@ async function handleCheckout() {
         } else {
             alert("Order Placed Successfully!");
         }
-
-        // 7. Reset State and Redirect
         state.cartItems = [];
         updateCartUI();
 
@@ -452,15 +376,10 @@ async function handleCheckout() {
     }
 }
 
-// ==========================================
-// 5. MODALS (DETAIL, AUTH & ADDRESS)
-// ==========================================
 
 function openDetailModal(productId) {
     const product = state.products.find(p => p.id === productId);
     if (!product) return;
-
-    // Populate Modal Data
     const imgEl = document.getElementById('modal-img');
     imgEl.src = product.imageUrl || 'https://placehold.co/600';
     imgEl.onerror = () => imgEl.src = 'https://placehold.co/600';
@@ -469,7 +388,6 @@ function openDetailModal(productId) {
     document.getElementById('modal-desc').textContent = product.description || 'Delicious food ready to be delivered.';
     document.getElementById('modal-price').textContent = `$${product.price.toFixed(2)}`;
     
-    // Recreate Add Button to clear old listeners
     const btn = document.getElementById('modal-add-btn');
     const newBtn = btn.cloneNode(true);
     btn.parentNode.replaceChild(newBtn, btn);
@@ -510,7 +428,6 @@ function switchAuthTab(tab) {
 }
 
 function setupEventListeners() {
-    // Auth Forms (checked if present on page)
     const loginForm = document.getElementById('form-login');
     if (loginForm) {
         loginForm.onsubmit = async (e) => {
@@ -520,8 +437,6 @@ function setupEventListeners() {
                 const user = await api.login(fd.get('email'), fd.get('password'));
                 localStorage.setItem('user', JSON.stringify(user));
                 state.user = user;
-                
-                // Role Redirects
                 const role = user.role?.roleName || user.role; 
                 if (role === 'ADMIN') window.location.href = 'admin_dashboard.html';
                 else if (role === 'STAFF') window.location.href = 'staff_dashboard.html';
@@ -552,8 +467,6 @@ function setupEventListeners() {
             }
         };
     }
-
-    // NEW: Address Form Listener
     const addressForm = document.getElementById('address-form');
     if(addressForm) {
         addressForm.addEventListener('submit', handleAddressSubmit);

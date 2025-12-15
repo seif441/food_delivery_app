@@ -17,13 +17,11 @@ public class CustomerController {
         this.service = service;
     }
 
-    // View menu
     @GetMapping("/menu")
     public List<Product> viewMenu() {
         return service.viewMenu();
     }
 
-    // View order status
     @GetMapping("/orders/{orderId}")
     public Order viewOrderStatus(@PathVariable Long orderId) {
         return service.viewOrderStatus(orderId);

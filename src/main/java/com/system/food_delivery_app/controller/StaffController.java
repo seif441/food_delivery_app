@@ -18,7 +18,6 @@ public class StaffController {
     @Autowired
     private StaffService staffService;
 
-    // GET /api/staff/{id} - Profile
     @GetMapping("/{staffId}")
     public ResponseEntity<?> getStaffProfile(@PathVariable Long staffId) {
         try {
@@ -29,7 +28,6 @@ public class StaffController {
         }
     }
 
-    // GET /api/staff/{id}/orders - View All
     @GetMapping("/{staffId}/orders")
     public ResponseEntity<?> viewAllOrders() {
         try {
@@ -40,7 +38,6 @@ public class StaffController {
         }
     }
 
-    // PUT /api/staff/{id}/orders/{orderId}/prepare - Start Cooking
     @PutMapping("/{staffId}/orders/{orderId}/prepare")
     public ResponseEntity<?> prepareOrder(@PathVariable Long staffId, @PathVariable Long orderId) {
         try {
@@ -51,7 +48,6 @@ public class StaffController {
         }
     }
 
-    // PUT /api/staff/{id}/orders/{orderId}/out-for-delivery - Ready/Assign Driver
     @PutMapping("/{staffId}/orders/{orderId}/out-for-delivery")
     public ResponseEntity<?> markOutForDelivery(@PathVariable Long orderId) {
         try {

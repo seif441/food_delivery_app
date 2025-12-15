@@ -17,7 +17,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admins")
-// @CrossOrigin(origins = "*") 
 public class AdminController {
 
     private final AdminService service;
@@ -32,7 +31,6 @@ public class AdminController {
         this.service = service;
     }
 
-    // --- USER & STAFF MANAGEMENT ---
 
     @GetMapping("/users")
     public ResponseEntity<List<User>> getAllUsers() {
@@ -44,10 +42,8 @@ public class AdminController {
         return ResponseEntity.ok(service.getAllStaff());
     }
 
-    // FIXED: Changed input from Staff to User to handle both types generically
     @PostMapping("/staff")
     public ResponseEntity<?> addStaff(@RequestBody User userData, @RequestParam String roleName) {
-        // 1. Find the role
         Optional<Role> roleOpt = roleRepository.findAll().stream()
                 .filter(r -> r.getRoleName().equalsIgnoreCase(roleName)) 
                 .findFirst();
@@ -56,7 +52,6 @@ public class AdminController {
             return ResponseEntity.badRequest().body("Error: Role '" + roleName + "' does not exist.");
         }
 
-        // 2. Delegate to Service to create the correct Entity type (Staff vs DeliveryStaff)
         return ResponseEntity.ok(service.addStaff(userData, roleOpt.get()));
     }
 
@@ -80,7 +75,6 @@ public class AdminController {
         return ResponseEntity.noContent().build();
     }
 
-    // --- MENU MANAGEMENT ---
 
     @GetMapping("/menu")
     public ResponseEntity<List<Product>> viewMenu() {

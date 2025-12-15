@@ -1,16 +1,9 @@
-/**
- * Delivery Dashboard Controller
- * CONNECTED TO REAL DATABASE - NO MOCK DATA
- */
+
 const DeliveryDashboard = {
     driverId: null,
-    isAvailable: false, // Default to false (safe state) until loaded
+    isAvailable: false, 
     currentView: 'dashboard',
-    
-    // CONSTANT: Driver only gets this amount per order
     DELIVERY_FEE: 2.99, 
-    
-    // --- LOCAL STATS ---
     todayEarnings: 0.00,
     todayCount: 0,
 
@@ -25,37 +18,28 @@ const DeliveryDashboard = {
         const nameEl = document.getElementById('sidebar-name');
         if(nameEl) nameEl.innerText = user.name || user.username || "Driver";
 
-        // 1. Initial Load of Orders
         this.loadActiveOrders();
         this.loadHistory();
-        
-        // 2. NEW: Sync Availability Status from Server
         this.syncStatus();
 
-        // 3. Polling every 15s
         setInterval(() => {
             this.loadActiveOrders();
-            // Optional: Keep status synced in case Admin changes it
-            // this.syncStatus(); 
         }, 15000);
 
         if(window.lucide) lucide.createIcons();
     },
 
-    // --- NEW FUNCTION: Sync Status ---
     async syncStatus() {
         try {
             const driver = await api.getDriverProfile(this.driverId);
-            // Update local state to match database
             this.isAvailable = driver.isAvailable; 
-            // Update UI to match
+
             this.updateStatusUI(this.isAvailable);
         } catch (e) {
             console.error("Failed to sync status:", e);
         }
     },
 
-    // --- VIEW SWITCHING ---
     switchView(viewName) {
         this.currentView = viewName;
         
@@ -97,7 +81,6 @@ const DeliveryDashboard = {
         }
     },
 
-    // --- API WRAPPERS ---
     async getActive() {
         try {
             const res = await fetch(`${API_BASE}/delivery/${this.driverId}/active-orders`, { headers: api.getHeaders() });
@@ -136,33 +119,27 @@ const DeliveryDashboard = {
     },
 
     async toggleAvailability() {
-        // 1. Optimistic UI Update (Change color immediately)
         this.isAvailable = !this.isAvailable;
         this.updateStatusUI(this.isAvailable);
 
         try {
-            // 2. TELL THE SERVER YOU ARE AVAILABLE
             const res = await fetch(`${API_BASE}/delivery/${this.driverId}/toggle-availability`, { 
                 method: 'PUT', 
                 headers: api.getHeaders() 
             });
             
             if(res.ok) {
-                // 3. If server says OK, check for new orders immediately
                 setTimeout(() => this.loadActiveOrders(), 500); 
             } else {
                 throw new Error("Failed to toggle");
             }
         } catch(e) {
             console.error("Toggle error:", e);
-            // Revert UI if failed
             this.isAvailable = !this.isAvailable;
             this.updateStatusUI(this.isAvailable);
             alert("Could not update availability. Check connection.");
         }
     },
-
-    // --- ACTIONS ---
     async loadActiveOrders() {
         const orders = await this.getActive();
         this.renderActive(orders);
@@ -183,7 +160,6 @@ const DeliveryDashboard = {
             return;
         }
         
-        // FIXED: Count orders * DELIVERY_FEE ($2.99) instead of summing total price
         this.todayCount = history.length;
         this.todayEarnings = this.todayCount * this.DELIVERY_FEE;
     },
@@ -245,7 +221,6 @@ const DeliveryDashboard = {
         }
     },
 
-    // --- RENDERERS ---
 
     renderActive(orders) {
         const container = document.getElementById('active-order-container');
@@ -258,10 +233,6 @@ const DeliveryDashboard = {
         const order = orders[0];
         const customer = order.customer || { name: "Guest", phoneNumber: "" };
         
-        // --- ADDRESS PARSING LOGIC ---
-        // 1. Try new DeliveryAddress object
-        // 2. Try array of addresses on Customer
-        // 3. Try legacy string
         let fullAddress = "Address not provided";
         let additionalInfo = "";
 
@@ -271,7 +242,6 @@ const DeliveryDashboard = {
             if(da.postalCode) fullAddress += ` ${da.postalCode}`;
             if(da.additionalInfo) additionalInfo = da.additionalInfo;
         } else if (customer.addresses && customer.addresses.length > 0) {
-            // Fallback: Use the user's first saved address
             const da = customer.addresses[0];
             fullAddress = `${da.streetAddress}, ${da.city}`;
             if(da.postalCode) fullAddress += ` ${da.postalCode}`;

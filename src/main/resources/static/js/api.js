@@ -1,16 +1,9 @@
-// FIXED: Point to your running Spring Boot backend on port 5005
-// api.js - Line 2
-// REPLACE THIS LINE:
-// const API_BASE = 'http://localhost:5005/api';
 
-// WITH THIS:
 const API_BASE = 'https://food-delivery-system-production-a37e.up.railway.app/api';
 
 const api = {
-    // 1. Session Persistence: Load user immediately
     currentUser: JSON.parse(localStorage.getItem('user')) || null,
 
-    // --- Helper: Get Auth Headers ---
     getHeaders: () => {
         const headers = { 'Content-Type': 'application/json' };
         if (api.currentUser && api.currentUser.token) {
@@ -19,7 +12,6 @@ const api = {
         return headers;
     },
 
-    // --- User Session Management ---
     setUser: (user) => {
         api.currentUser = user;
         localStorage.setItem('user', JSON.stringify(user));
@@ -33,10 +25,6 @@ const api = {
         api.currentUser = null;
         localStorage.removeItem('user');
     },
-
-    // ============================
-    // 1. AUTHENTICATION
-    // ============================
 
     login: async (email, password) => {
         const response = await fetch(`${API_BASE}/users/login`, {
@@ -69,17 +57,12 @@ const api = {
         return await response.json();
     },
 
-    // ============================
-    // 2. PUBLIC DATA (Menu)
-    // ============================
-
     getAllCategories: async () => {
         const response = await fetch(`${API_BASE}/categories/all`); 
         if (!response.ok) return [];
         return await response.json();
     },
 
-    // MERGED: Sends 'name', 'description' (for DB compatibility), and 'icon'
     addCategory: async (name, icon) => {
         const response = await fetch(`${API_BASE}/categories/add`, {
             method: 'POST',
@@ -124,7 +107,6 @@ const api = {
         return await response.json();
     },
 
-    // FROM FRIEND: Update existing product
     updateProduct: async (id, productData) => {
         const response = await fetch(`${API_BASE}/products/update/${id}`, {
             method: 'PUT',
@@ -139,7 +121,6 @@ const api = {
         return await response.json();
     },
 
-    // FROM FRIEND: Toggle availability
     toggleProductAvailability: async (id) => {
         const response = await fetch(`${API_BASE}/products/${id}/toggle-availability`, {
             method: 'PUT',
@@ -155,10 +136,6 @@ const api = {
         });
         if (!response.ok) throw new Error("Failed to delete product");
     },
-
-    // ============================
-    // 3. SHOPPING CART
-    // ============================
 
     placeOrder: async (orderData) => {
         try {
@@ -249,10 +226,7 @@ const api = {
         }
     },
 
-    // ============================
-    // 4. ADDRESS MANAGEMENT
-    // ============================
-
+  
     getAddresses: async (userId) => {
         try {
             const response = await fetch(`${API_BASE}/addresses?userId=${userId}`, { headers: api.getHeaders() });
@@ -271,9 +245,6 @@ const api = {
         return await response.json();
     },
 
-    // ============================
-    // 5. ADMIN & STAFF DASHBOARDS
-    // ============================
 
     getAllUsers: async () => {
         const response = await fetch(`${API_BASE}/admins/users`, { headers: api.getHeaders() });
@@ -339,12 +310,6 @@ const api = {
         if (!response.ok) throw new Error('Failed to update status');
         return await response.json();
     },
-    // ... inside api object ...
-
-    // ============================
-    // 6. ADMIN ORDER MANAGEMENT (NEW)
-    // ============================
-
     getAllOrders: async () => {
         const response = await fetch(`${API_BASE}/orders/all`, { 
             headers: api.getHeaders() 
@@ -361,8 +326,6 @@ const api = {
         if (!response.ok) throw new Error("Failed to update status");
         return await response.json();
     },
-    // Add this to your api object in api.js
-
     getSystemLogs: async () => {
         const response = await fetch(`${API_BASE}/admins/logs`, { 
             headers: api.getHeaders() 

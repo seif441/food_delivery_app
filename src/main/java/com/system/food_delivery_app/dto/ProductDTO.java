@@ -7,24 +7,21 @@ import jakarta.validation.constraints.Size;
 
 public class ProductDTO {
 
-    @NotBlank(message = "Product name is required") // Prevents null or "" or " "
+    @NotBlank(message = "Product name is required")
     private String name;
 
     @Size(max = 500, message = "Description cannot exceed 500 characters")
     private String description;
 
-    @Min(value = 0, message = "Price cannot be negative") // Prevents negative prices
+    @Min(value = 0, message = "Price cannot be negative") 
     private double price;
 
     private String imageUrl;
-    
-    // Optional: Add this if you want to define availability during creation
+
     private Boolean available; 
 
-    @NotNull(message = "Category ID is required") // Prevents creating a product without a category
+    @NotNull(message = "Category ID is required") 
     private Long categoryId;
-
-    // --- Getters and Setters ---
 
     public String getName() {
         return name;

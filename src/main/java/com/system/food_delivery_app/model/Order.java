@@ -24,7 +24,6 @@ public class Order {
     @JsonIgnoreProperties({"orders", "hibernateLazyInitializer", "handler", "password"}) 
     private DeliveryStaff deliveryStaff;
 
-    // FIX: EAGER loading makes sure items are always sent to frontend
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JsonManagedReference
     private List<CartItem> items;
@@ -44,7 +43,6 @@ public class Order {
         if (this.status == null) this.status = OrderStatus.PENDING;
     }
 
-    // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public User getCustomer() { return customer; }

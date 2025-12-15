@@ -3,14 +3,12 @@ let state = {
     isSidebarOpen: false,
     modal: { isOpen: false, type: null, item: null, catId: null },
     
-    // Real Data Containers
     categories: [], 
     products: [],
     staff: [],      
     orders: [],
     logs: [],
-    
-    // Stats (Will be calculated from real data)
+ 
     stats: [
        { label: 'Total Revenue', value: '$0.00', change: '0%', icon: 'dollar-sign', color: 'bg-emerald-100 text-emerald-600' },
        { label: 'Active Orders', value: '0', change: '0%', icon: 'clock', color: 'bg-orange-100 text-orange-600' },
@@ -20,10 +18,9 @@ let state = {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Security Check
     const user = api.getUser();
     if (!user || (user.role && user.role.roleName !== 'ADMIN')) {
-        window.location.href = 'auth.html'; // Redirect if not admin
+        window.location.href = 'auth.html';
         return;
     }
     loadAllData();
@@ -31,7 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadAllData() {
     try {
-        // Fetch ALL data in parallel
         const [cats, prods, users, orders, logs] = await Promise.all([
             api.getAllCategories(),
             api.getAllProducts(),
@@ -39,23 +35,18 @@ async function loadAllData() {
             api.getAllOrders(),
             api.getSystemLogs()
         ]);
-
-        // 1. Setup Menu Data
         state.products = prods;
         state.categories = cats.map(c => {
             return {
                 id: c.id,
                 name: c.description || c.name,
                 icon: c.icon || '🍽️', 
-                // Filter products that belong to this category
                 products: prods.filter(p => p.category && p.category.id === c.id).map(p => ({
                     ...p,
                     image: p.imageUrl || 'https://via.placeholder.com/300?text=No+Image'
                 }))
             };
         });
-
-        // 2. Setup Staff Data
         state.staff = users.filter(u => u.role && (u.role.roleName === 'STAFF' || u.role.roleName === 'DELIVERY_STAFF' || u.role.roleName === 'ADMIN')).map(u => ({
             id: u.id,
             name: u.name,
@@ -64,7 +55,6 @@ async function loadAllData() {
             avatar: u.name ? u.name.substring(0,2).toUpperCase() : 'UR'
         }));
 
-        // 3. Setup Orders Data & Calculate Stats
         state.orders = orders.sort((a, b) => new Date(b.orderDate) - new Date(a.orderDate)); // Newest first
         state.logs = logs;
         calculateStats();
@@ -78,22 +68,18 @@ async function loadAllData() {
 }
 
 function calculateStats() {
-    // 1. Total Revenue (Sum of all DELIVERED orders)
     const revenue = state.orders
         .filter(o => o.status === 'DELIVERED')
         .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
     
     state.stats[0].value = `$${revenue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
 
-    // 2. Active Orders (PENDING, PREPARING, PREPARED, OUT_FOR_DELIVERY)
     const activeCount = state.orders.filter(o => ['PENDING', 'PREPARING', 'PREPARED', 'OUT_FOR_DELIVERY'].includes(o.status)).length;
     state.stats[1].value = activeCount.toString();
 
-    // 3. Pending Delivery (Specifically OUT_FOR_DELIVERY)
     const deliveryCount = state.orders.filter(o => o.status === 'OUT_FOR_DELIVERY').length;
     state.stats[2].value = deliveryCount.toString();
 
-    // 4. Total Staff
     state.stats[3].value = state.staff.length.toString();
 }
 
@@ -131,19 +117,16 @@ function renderHeader() {
     const actionsDiv = document.getElementById('header-actions');
     let actionHtml = '';
 
-    // --- BUTTON LOGIC STARTS HERE ---
     if (state.activeTab === 'menu') {
         actionHtml = `<button onclick="openModal('addCategory')" class="bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl flex items-center space-x-2 shadow-lg shadow-slate-900/20 transition-all text-sm md:text-base"><i data-lucide="folder-plus" class="w-4 h-4 md:w-5 md:h-5"></i><span class="font-medium hidden md:inline">New Category</span></button>`;
     } 
     else if (state.activeTab === 'staff') {
         actionHtml = `<button onclick="openModal('addStaff')" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl flex items-center space-x-2 shadow-lg shadow-orange-600/20 transition-all text-sm md:text-base"><i data-lucide="user-plus" class="w-4 h-4 md:w-5 md:h-5"></i><span class="font-medium hidden md:inline">Add Employee</span></button>`;
-    } 
-    // *** PUT YOUR NEW CODE HERE ***
+    }
     else if (state.activeTab === 'tracking') {
         actionHtml = `<button onclick="loadAllData()" class="bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 px-4 py-2 rounded-xl flex items-center space-x-2 shadow-sm transition-all"><i data-lucide="refresh-cw" class="w-4 h-4"></i><span class="font-medium">Refresh Logs</span></button>`;
     }
 
-    // This adds the "AD" circle to the end of whatever button was created above
     actionHtml += `<div class="h-8 w-8 rounded-full bg-orange-100 text-orange-700 flex items-center justify-center font-bold text-sm border-2 border-orange-200">AD</div>`;
     actionsDiv.innerHTML = actionHtml;
 }
@@ -158,14 +141,12 @@ function renderMainContent() {
 }
 
 function getDashboardHtml() {
-    // 1. Calculate Stats
     const statsHtml = state.stats.map(stat => `
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex items-center justify-between hover:shadow-md transition-shadow">
             <div><p class="text-sm font-medium text-gray-500 mb-1">${stat.label}</p><h2 class="text-2xl font-bold text-gray-800">${stat.value}</h2></div>
             <div class="p-3 rounded-full ${stat.color} bg-opacity-20"><i data-lucide="${stat.icon}" class="w-6 h-6"></i></div>
         </div>`).join('');
-    
-    // 2. Recent Orders Table
+
     const recentOrdersHtml = state.orders.slice(0, 5).map(o => {
         const statusColor = getStatusColor(o.status);
         return `<tr class="border-b border-gray-50 hover:bg-gray-50 transition-colors">
@@ -176,17 +157,13 @@ function getDashboardHtml() {
         </tr>`;
     }).join('');
 
-    // --- FIX START: Define salesMap HERE before the loop ---
     const salesMap = {}; 
     
-    // 3. Loop through real orders to count product sales
     if (state.orders && state.orders.length > 0) {
         state.orders.forEach(order => {
-            // Only count valid orders
             if (order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.items) {
                 order.items.forEach(item => {
                     const product = item.product;
-                    // Check if product exists to avoid crashing
                     if (product && product.id) {
                         if (!salesMap[product.id]) {
                             salesMap[product.id] = {
@@ -202,14 +179,11 @@ function getDashboardHtml() {
             }
         });
     }
-    // --- FIX END ---
-
-    // 4. Sort and Top 5
     const topSellingProducts = Object.values(salesMap)
         .sort((a, b) => b.count - a.count)
         .slice(0, 5);
 
-    // 5. Generate HTML
+
     const topSellingHtml = topSellingProducts.length > 0 ? topSellingProducts.map(p => `
         <div class="flex items-center space-x-4 mb-6 last:mb-0 group">
             <div class="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border border-gray-100 shadow-sm group-hover:shadow-md transition-all">
@@ -227,7 +201,6 @@ function getDashboardHtml() {
         </div>
     `).join('') : '<div class="text-center py-8 text-gray-400 text-sm">No sales data recorded yet.</div>';
 
-    // 6. Return Final HTML
     return `<div class="space-y-6 animate-fade-in-up">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">${statsHtml}</div>
         
@@ -342,8 +315,6 @@ function getOrdersHtml() {
     if(state.orders.length === 0) {
         return `<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-8 text-center"><h3 class="text-lg font-medium text-gray-500">No orders found.</h3></div>`;
     }
-    
-    // Grid View for Orders
     return `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in-up">${state.orders.map(o => {
         const statusColor = getStatusColor(o.status);
         const itemCount = o.items ? o.items.reduce((acc, i) => acc + i.quantity, 0) : 0;
@@ -382,7 +353,6 @@ function getTrackingHtml() {
     }
 
     const rows = state.logs.map(log => {
-        // --- 1. Badge Logic (Action Type) ---
         let badgeColor = 'bg-gray-100 text-gray-600';
         let icon = 'info';
 
@@ -392,8 +362,6 @@ function getTrackingHtml() {
         else if (log.action.includes('DRIVER')) { badgeColor = 'bg-purple-50 text-purple-600 border border-purple-100'; icon = 'truck'; }
         else if (log.action === 'ORDER_DELIVERED') { badgeColor = 'bg-teal-50 text-teal-600 border border-teal-100'; icon = 'check-circle'; }
         else if (log.action === 'ORDER_CANCELLED') { badgeColor = 'bg-red-50 text-red-600 border border-red-100'; icon = 'x-circle'; }
-
-        // --- 2. Parsing Logic (Split 'Details') ---
         let user = 'System';
         let role = '-';
         let desc = log.details;
@@ -433,7 +401,6 @@ function getTrackingHtml() {
             role = 'CUSTOMER';
         }
 
-        // --- 3. Role Color Logic (NEW) ---
         let roleBadgeClass = 'bg-gray-100 text-gray-600 border-gray-200'; // Default
 
         if (role === 'ADMIN') {
@@ -446,7 +413,6 @@ function getTrackingHtml() {
             roleBadgeClass = 'bg-violet-100 text-violet-700 border-violet-200'; // Purple for Driver
         }
 
-        // --- 4. Render Row ---
         return `<tr class="border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
             <td class="p-4 whitespace-nowrap text-xs text-gray-400 font-mono">${log.timestamp}</td>
             <td class="p-4">
@@ -495,8 +461,6 @@ function getStatusColor(status) {
     }
 }
 
-// --- FORM HANDLING (UNCHANGED logic, just cleaned up) ---
-
 async function handleFormSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -510,7 +474,6 @@ async function handleFormSubmit(e) {
                 email: formData.get('email'),
                 password: formData.get('password')
             };
-            // Set dtype based on role
             staffData.dtype = (role === 'DELIVERY_STAFF') ? "DELIVERY_STAFF" : "STAFF";
             if(role === 'DELIVERY_STAFF') staffData.isAvailable = 0; 
 
@@ -544,7 +507,7 @@ async function handleFormSubmit(e) {
             alert("Product Updated");
         }
         closeModal();
-        loadAllData(); // RELOAD DATA
+        loadAllData(); 
     } catch (err) {
         alert("Operation failed: " + err.message);
     }
@@ -569,7 +532,6 @@ async function handleDeleteStaff(id) {
 function switchTab(tab) { state.activeTab = tab; state.isSidebarOpen = false; render(); }
 function toggleSidebar() { state.isSidebarOpen = !state.isSidebarOpen; render(); }
 
-// --- ICON SELECTION HELPER ---
 function selectIcon(icon, btn) {
     document.getElementById('selectedIconInput').value = icon;
     document.querySelectorAll('.icon-btn').forEach(b => {

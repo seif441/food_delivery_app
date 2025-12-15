@@ -1,12 +1,12 @@
 package com.system.food_delivery_app.service;
 
-import com.system.food_delivery_app.model.Customer; // Import Customer
+import com.system.food_delivery_app.model.Customer;
 import com.system.food_delivery_app.model.DeliveryStaff;
 import com.system.food_delivery_app.model.Order;
 import com.system.food_delivery_app.model.OrderStatus;
 import com.system.food_delivery_app.repository.DeliveryStaffRepository;
 import com.system.food_delivery_app.repository.OrderRepository;
-import com.system.food_delivery_app.repository.UserRepository; // 1. Import UserRepository
+import com.system.food_delivery_app.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +25,7 @@ public class OrderService {
     private DeliveryStaffRepository deliveryStaffRepository;
 
     @Autowired
-    private UserRepository userRepository; // 2. Inject UserRepository
+    private UserRepository userRepository;
 
     private static final double DELIVERY_FEE = 2.99;
 
@@ -35,13 +35,10 @@ public class OrderService {
             throw new RuntimeException("Cannot place an empty order.");
         }
         
-        // --- FIX STARTS HERE ---
-        // 3. Validate and Fetch the full Customer entity
         if (order.getCustomer() == null || order.getCustomer().getId() == null) {
             throw new RuntimeException("Order must have a valid Customer ID.");
         }
 
-        // We fetch the real customer from the DB so we have the Name and Email loaded
         Customer fullCustomer = (Customer) userRepository.findById(order.getCustomer().getId())
                 .orElseThrow(() -> new RuntimeException("Customer not found in database"));
         

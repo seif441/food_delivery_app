@@ -11,12 +11,10 @@ import java.util.Optional;
 @Repository
 public interface DeliveryStaffRepository extends JpaRepository<DeliveryStaff, Long> {
 
-    // Crucial for System Auto-Assignment: Find first driver who is free
     Optional<DeliveryStaff> findFirstByIsAvailableTrue();
 
     Optional<DeliveryStaff> findByEmail(String email);
 
-    // Helper for Admin to see all drivers
     @Query("SELECT d FROM DeliveryStaff d")
     List<DeliveryStaff> findAllDeliveryStaff();
 }

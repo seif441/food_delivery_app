@@ -3,7 +3,7 @@ package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "products") // Table name: products
+@Table(name = "products") 
 public class Product {
 
     @Id

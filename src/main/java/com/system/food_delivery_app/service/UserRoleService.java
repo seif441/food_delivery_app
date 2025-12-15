@@ -15,7 +15,6 @@ public class UserRoleService {
     @Autowired
     private RoleRepository roleRepository;
 
-    // Assign role to user
     public User assignRoleToUser(Long userId, String roleName) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));

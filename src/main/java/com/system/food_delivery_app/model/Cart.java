@@ -22,8 +22,7 @@ public class Cart {
     @Transient
     private int totalItemQuantity;
 
-    // Constant for Delivery Fee
-    @Transient // Not saved to DB column, but logic uses it
+    @Transient
     private static final double DELIVERY_FEE = 2.99;
 
     public Long getId() { return this.id; }
@@ -41,9 +40,6 @@ public class Cart {
     public int getTotalItemQuantity() { return this.totalItemQuantity; }
     public void setTotalItemQuantity(int totalItemQuantity) { this.totalItemQuantity = totalItemQuantity; }
 
-    /**
-     * UPDATED: Calculates total price + $2.99 delivery fee
-     */
     public void calculateTotal() {
         this.totalItemQuantity = 0;
         this.totalPrice = 0.0;
@@ -53,8 +49,6 @@ public class Cart {
                 totalItemQuantity += item.getQuantity();
                 totalPrice += item.getPrice();
             }
-            
-            // LOGIC: Only add delivery fee if there are items in the cart
             if (totalItemQuantity > 0) {
                 this.totalPrice += DELIVERY_FEE;
             }

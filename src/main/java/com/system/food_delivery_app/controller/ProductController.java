@@ -24,7 +24,6 @@ public class ProductController {
         this.adminService = adminService;
     }
 
-    // --- CREATE ---
     @PostMapping("/add")
     public ResponseEntity<?> addProduct(@Valid @RequestBody ProductDTO productDTO) {
         try {
@@ -35,7 +34,6 @@ public class ProductController {
         }
     }
 
-    // --- READ ---
     @GetMapping("/all")
     public ResponseEntity<List<Product>> getAllProducts() {
         return ResponseEntity.ok(productService.getAllProducts());
@@ -53,18 +51,6 @@ public class ProductController {
         return ResponseEntity.ok(productService.getProductsByCategory(categoryId));
     }
 
-    // --- UPDATE ---
-    // @PutMapping("/update/{id}")
-    // public ResponseEntity<?> updateProduct(@PathVariable Long id, @Valid @RequestBody ProductDTO productDTO) {
-    //     try {
-    //         Product updatedProduct = productService.updateProduct(id, productDTO);
-    //         return ResponseEntity.ok(updatedProduct);
-    //     } catch (RuntimeException e) {
-    //         return ResponseEntity.badRequest().body(e.getMessage());
-    //     }
-    // }
-
-    // --- DELETE ---
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<?> deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
@@ -82,11 +68,8 @@ public ResponseEntity<?> toggleProductAvailability(@PathVariable Long id) {
 }
 
 
-// inside ProductController.java
-
 @PutMapping("/update/{id}")
 public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
-    // This calls the method you already showed me in AdminService
     Product updatedProduct = adminService.updateMenuItem(id, product);
     return ResponseEntity.ok(updatedProduct);
 }

@@ -34,17 +34,10 @@ public class AdminService {
         this.staffRepository = staffRepository;
     }
 
-    // --- STAFF & USER MANAGEMENT ---
-
-    /**
-     * FIXED: Branching logic to create the correct Entity Type based on Role.
-     * This ensures the 'dtype' column in the DB is set to 'DELIVERY_STAFF' or 'STAFF'.
-     */
     public User addStaff(User userData, Role role) {
         if ("DELIVERY_STAFF".equalsIgnoreCase(role.getRoleName()) || 
             "DELIVERY".equalsIgnoreCase(role.getRoleName())) {
-            
-            // Create DELIVERY_STAFF entity
+
             DeliveryStaff driver = new DeliveryStaff();
             driver.setName(userData.getName());
             driver.setEmail(userData.getEmail());
@@ -56,7 +49,7 @@ public class AdminService {
             return userRepo.save(driver);
 
         } else {
-            // Create standard STAFF entity
+
             Staff staff = new Staff();
             staff.setName(userData.getName());
             staff.setEmail(userData.getEmail());
@@ -89,7 +82,6 @@ public class AdminService {
         userRepo.deleteById(userId);
     }
 
-    // --- MENU MANAGEMENT ---
 
     public Product addMenuItem(Product product) {
         return productRepo.save(product);
@@ -140,12 +132,11 @@ public class AdminService {
         }
 
         List<Map<String, String>> logs = new ArrayList<>();
-        // Regex to parse: [Date Time] ACTION | Details
         Pattern pattern = Pattern.compile("^\\[(.*?)\\]\\s+(.*?)\\s+\\|\\s+(.*)$");
 
         try {
             List<String> lines = Files.readAllLines(Paths.get(LOG_FILE_PATH));
-            // Reverse to show newest first
+
             Collections.reverse(lines); 
 
             for (String line : lines) {

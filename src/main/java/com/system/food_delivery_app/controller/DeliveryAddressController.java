@@ -20,7 +20,6 @@ public class DeliveryAddressController {
 
     @GetMapping
     public ResponseEntity<List<DeliveryAddress>> getAddressesByUser(@RequestParam Long userId) {
-        // = userRepository.getById(userId)
         List<DeliveryAddress> addresses = deliveryAddressService.findAddressesByUserId(userId);
         return ResponseEntity.ok(addresses);
     }
@@ -43,7 +42,6 @@ public class DeliveryAddressController {
         return deliveryAddressService.update(id, addressDetails)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
-                // make sure it's saved in the repo (database)
     }
 
     @DeleteMapping("/{id}")

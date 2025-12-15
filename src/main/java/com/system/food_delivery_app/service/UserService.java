@@ -16,9 +16,6 @@ public class UserService {
     
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    
-    // TrackingService Removed from here - Handled by AOP Aspect
-
     private static final Pattern PASSWORD_PATTERN = Pattern.compile("^(?=.*[A-Za-z]).{8,}$");
 
     @Autowired
@@ -58,8 +55,6 @@ public class UserService {
         if (!user.getPassword().equals(password)) {
             throw new IllegalArgumentException("Invalid email or password.");
         }
-
-        // Clean! No logging code here. The Aspect watches this method.
         return user;
     }
 

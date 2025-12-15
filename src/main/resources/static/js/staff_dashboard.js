@@ -1,8 +1,3 @@
-/**
- * Staff Dashboard Controller
- * CONNECTED TO BACKEND (Port 5005) + ANIMATIONS RESTORED
- */
-// Ensure API_BASE matches your api.js setting
 const STAFF_API_BASE = 'https://food-delivery-system-production-a37e.up.railway.app/api/staff';
 
 const StaffDashboard = {
@@ -10,7 +5,6 @@ const StaffDashboard = {
     currentFilter: 'all',
     
     init() {
-        // 1. GET USER FROM SESSION
         const user = api.getUser();
         
         if (!user) {
@@ -20,18 +14,14 @@ const StaffDashboard = {
 
         this.staffId = user.id; 
 
-        // 2. LOAD PROFILE & ORDERS
         this.updateHeaderName(user.name || user.username || "Chef");
         this.loadProfile();
         this.fetchOrders();
         
-        // 3. START POLLING
         setInterval(() => this.fetchOrders(), 10000);
         
         if(window.lucide) lucide.createIcons();
     },
-
-    // --- PROFILE ---
     async loadProfile() {
         try {
             const staffProfile = await api.getStaffProfile(this.staffId);
@@ -49,7 +39,7 @@ const StaffDashboard = {
         }
     },
 
-    // --- ORDERS ---
+    // ORDERS 
     async fetchOrders() {
         try {
             const orders = await api.getStaffOrders(this.staffId);
@@ -59,13 +49,13 @@ const StaffDashboard = {
         }
     },
 
-    // --- ANIMATED ACTIONS ---
+    // ANIMATED ACTIONS
 
     async prepareOrder(orderId) {
         const card = document.getElementById(`ticket-${orderId}`);
         const btn = document.getElementById(`btn-cook-${orderId}`);
         
-        // 1. ANIMATION START
+        // ANIMATION START
         if(btn) {
             btn.innerHTML = `<i data-lucide="flame" class="w-4 h-4 animate-bounce"></i> Igniting...`;
             btn.className = "bg-orange-600 text-white py-2 rounded-lg font-bold text-sm transition w-full shadow-lg shadow-orange-500/50";
@@ -73,30 +63,27 @@ const StaffDashboard = {
         }
 
         if(card) {
-            card.classList.add('animate-sizzle'); // CSS Class required
-            this.spawnSteam(card); // JS Particle Generator
+            card.classList.add('animate-sizzle'); 
+            this.spawnSteam(card);
         }
 
         // 2. DELAY FOR EFFECT, THEN CALL BACKEND
         setTimeout(async () => {
             try {
-                // Call API
-                await api.prepareOrder(this.staffId, orderId);
-                
-                // 3. ANIMATION END (Success)
+                await api.prepareOrder(this.staffId, orderId);             
                 if(card) {
                     card.classList.remove('animate-sizzle');
                     card.classList.add('animate-scale-out');
                 }
                 
-                // Refresh data after animation exits
+                
                 setTimeout(() => this.fetchOrders(), 200);
 
             } catch(e) {
                 alert("Failed to start cooking. Check connection.");
-                this.fetchOrders(); // Reset UI
+                this.fetchOrders(); 
             }
-        }, 1200); // 1.2 second sizzle time
+        }, 1200);
     },
 
     async markReady(orderId) {
@@ -114,14 +101,11 @@ const StaffDashboard = {
         }, 200);
     },
 
-    // --- PARTICLE GENERATOR (THE "STEAM") ---
     spawnSteam(card) {
         for (let i = 0; i < 6; i++) {
             setTimeout(() => {
                 const steam = document.createElement('div');
-                steam.className = 'steam-particle'; // Requires CSS
-                
-                // Randomize size and position
+                steam.className = 'steam-particle';
                 const size = Math.random() * 10 + 10;
                 steam.style.width = `${size}px`;
                 steam.style.height = `${size}px`;
@@ -130,7 +114,6 @@ const StaffDashboard = {
                 
                 card.appendChild(steam);
                 
-                // Cleanup
                 setTimeout(() => steam.remove(), 1000);
             }, i * 150);
         }
@@ -198,7 +181,6 @@ const StaffDashboard = {
     },
 
     createTicket(order) {
-        // Handle Date Display
         let timeDisplay = '--:--';
         if(order.orderDate) {
             if(Array.isArray(order.orderDate)) {
@@ -242,7 +224,6 @@ const StaffDashboard = {
         }
 
         div.id = `ticket-${order.id}`;
-        // Important: 'relative overflow-hidden' keeps the steam inside or relative to the card
         div.className = `bg-white p-4 rounded-xl shadow-sm border border-gray-100 animate-slide-up ${borderClass} mb-4 last:mb-0 relative overflow-hidden`;
         
         const itemsHtml = (order.items || []).map(item => `

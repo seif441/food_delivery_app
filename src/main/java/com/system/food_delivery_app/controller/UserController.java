@@ -20,32 +20,25 @@ import com.system.food_delivery_app.service.UserService;
 public class UserController {
 
     private final UserService userService;
-
-    @Autowired // Best practice: Constructor Injection
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    // --- User Registration ---
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         try {
             User savedUser = userService.registerUser(user);
             return ResponseEntity.ok(savedUser);
         } catch (IllegalArgumentException ex) {
-            // Return specific error message (e.g., "Email already registered")
             return ResponseEntity.badRequest().body(ex.getMessage());
         } catch (RuntimeException ex) {
-            // Catch generic runtime exceptions (like "Role not found")
             return ResponseEntity.badRequest().body(ex.getMessage());
         }
     }
 
-    // --- User Login (UPDATED) ---
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
         try {
-            // Updated: Now receives a User object instead of String token
             User user = userService.loginUser(loginRequest.getEmail(), loginRequest.getPassword());
             return ResponseEntity.ok(user);
         } catch (IllegalArgumentException ex) {
@@ -53,21 +46,17 @@ public class UserController {
         }
     }
 
-    // --- Get All Users ---
     @GetMapping("/")
     public ResponseEntity<List<User>> getAllUsers() {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    // --- Get User by Email ---
     @GetMapping("/email/{email}")
     public ResponseEntity<User> getUserByEmail(@PathVariable String email) {
         return userService.findByEmail(email)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-
-    // --- Update User Profile ---
     @PutMapping("/{id}")
     public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
         try {
@@ -77,7 +66,6 @@ public class UserController {
         }
     }
 
-    // --- Delete User ---
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         try {

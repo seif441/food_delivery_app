@@ -3,7 +3,7 @@ package com.system.food_delivery_app.model;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "roles") // Table name: roles
+@Table(name = "roles")
 public class Role {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

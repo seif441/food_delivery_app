@@ -42,7 +42,6 @@ public class CartService {
             cart = cartRepository.save(cart);
         }
         
-        // Always recalculate to ensure delivery fee logic is applied
         cart.calculateTotal();
         return cart;
     }
@@ -87,7 +86,6 @@ public class CartService {
             cart.getItems().add(newItem);
         }
         
-        // This will now include the +2.99 fee
         cart.calculateTotal();
         return cartRepository.save(cart);
     }
@@ -98,8 +96,7 @@ public class CartService {
         
         Cart cart = getCart(cartId);
         cart.getItems().removeIf(item -> item.getProduct().getId().equals(productId));
-        
-        // Recalculate (if empty, fee is removed)
+
         cart.calculateTotal();
         return cartRepository.save(cart);
     }
@@ -130,7 +127,7 @@ public class CartService {
         
         Cart cart = getCart(cartId);
         cart.getItems().clear();
-        cart.calculateTotal(); // Will set total to 0.0 (removing fee)
+        cart.calculateTotal(); 
         cartRepository.save(cart);
     }
     

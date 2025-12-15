@@ -15,7 +15,6 @@ public class DeliveryAddress {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    // FIXED: Use WRITE_ONLY instead of JsonIgnore so we can SAVE the user ID
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) 
     private User user;
 
