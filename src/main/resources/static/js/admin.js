@@ -243,12 +243,13 @@ function getMenuHtml() {
                 <i data-lucide="plus-circle" class="w-8 h-8 text-gray-300 mx-auto mb-2 group-hover:text-orange-400"></i>
                 <p class="text-gray-400 text-sm group-hover:text-orange-600">Add first product to ${cat.name}</p></div>`
             : cat.products.map(p => {
-                const pString = JSON.stringify(p).replace(/"/g, '&quot;');
+                // REMOVED: const pString = ... (This was causing the error)
+
                 return `<div class="group bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:border-orange-100 transition-all duration-300 flex flex-col ${!p.available ? 'opacity-75 grayscale' : ''}">
                     <div class="h-48 w-full bg-gray-100 relative overflow-hidden">
                         <img src="${p.image}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                            <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="text-white text-sm font-medium hover:underline flex items-center">Edit Details <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i></button>
+                            <button onclick="triggerEditProduct('${p.id}', '${cat.id}')" class="text-white text-sm font-medium hover:underline flex items-center">Edit Details <i data-lucide="arrow-right" class="w-3 h-3 ml-1"></i></button>
                         </div>
                         <div class="absolute top-3 right-3"><span class="px-2.5 py-1 rounded-md text-xs font-bold shadow-sm backdrop-blur-md ${p.available ? 'bg-white/90 text-green-700' : 'bg-gray-800/90 text-white'}">${p.available ? 'Active' : 'Hidden'}</span></div>
                     </div>
@@ -262,7 +263,7 @@ function getMenuHtml() {
                                 <i data-lucide="${p.available ? 'eye-off' : 'eye'}" class="w-3.5 h-3.5"></i> <span>${p.available ? 'Hide' : 'Show'}</span>
                             </button>
                             <div class="flex items-center space-x-1">
-                                <button onclick="openModal('editProduct', JSON.parse('${pString}'), '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+                                <button onclick="triggerEditProduct('${p.id}', '${cat.id}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"><i data-lucide="pencil" class="w-4 h-4"></i></button>
                                 <button onclick="handleDeleteProduct('${p.id}')" class="p-2 text-red-500 hover:bg-red-50 rounded-lg"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
                             </div>
                         </div>
@@ -540,6 +541,20 @@ function selectIcon(icon, btn) {
     });
     btn.classList.remove('border-gray-200');
     btn.classList.add('bg-orange-100', 'border-orange-500', 'ring-2', 'ring-orange-200');
+}
+
+function triggerEditProduct(productId, catId) {
+    // 1. Find the product object from the global state using the ID
+    // We use == instead of === to match string/number differences
+    const product = state.products.find(p => p.id == productId);
+
+    if (product) {
+        // 2. Open the modal with the found object
+        openModal('editProduct', product, catId);
+    } else {
+        console.error("Product not found for ID:", productId);
+        alert("Error loading product details.");
+    }
 }
 
 function openModal(type, item = null, catId = null) {
